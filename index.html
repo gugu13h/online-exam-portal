@@ -125,6 +125,20 @@
   }
   .exam-bar .timer{font-size:20px;font-weight:600;}
   .exam-bar .timer.critical{color:#FF8A73;animation:pulse 1s infinite;}
+  .camera-tile{
+    position:fixed;right:16px;bottom:16px;z-index:80;width:180px;background:#101827;color:#fff;
+    border:2px solid var(--gold);border-radius:4px;overflow:hidden;box-shadow:0 8px 24px rgba(27,42,74,0.24);
+  }
+  .camera-tile video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000;transform:scaleX(-1);}
+  .camera-label{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--ink);
+  }
+  .camera-dot{width:8px;height:8px;border-radius:50%;background:#43D17A;box-shadow:0 0 0 4px rgba(67,209,122,0.15);}
+  @media (max-width:640px){
+    .camera-tile{width:128px;right:10px;bottom:10px;}
+    .camera-label{font-size:9px;padding:6px 7px;}
+  }
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
   .no-select{user-select:none;-webkit-user-select:none;}
 
@@ -182,6 +196,8 @@ let teacherTab = 'mytests';
 let teacherDraft = null;
 let openTestId = null;
 let examState = null; // active exam runtime state
+let cameraStream = null;
+let cameraError = '';
 
 const app = document.getElementById('app');
 function render(){ app.innerHTML = views[view](); afterRender(); }
@@ -294,7 +310,7 @@ async function doAuth(){
   view = 'teacherHome';
   render();
 }
-function logout(){ currentUser=null; view='landing'; render(); }
+function logout(){ stopCameraStream(); currentUser=null; view='landing'; render(); }
 
 /* ================= TEACHER HOME ================= */
 views.teacherHome = () => {
@@ -577,12 +593,15 @@ views.studentResult = () => {
 };
 
 /* ---------- confirm & start exam ---------- */
-function confirmStartTest(testId){
+function confirmStartTest(testId, keepError){
+  if(!keepError) cameraError = '';
   const t = DB.tests.find(x=>x.id===testId);
   app.innerHTML = `
   <div class="overlay"><div class="box">
     <h2 style="color:var(--ink);">Start Test?</h2>
-    <p class="muted">"${esc(t.title)}" shuru hote hi screen fullscreen ho jaayegi (${t.duration} minutes). Tab switch ya minimize karne par test turant terminate ho jaayega aur dobara attempt possible nahi hoga.</p>
+    <p class="muted">"${esc(t.title)}" shuru hote hi front camera access maanga jaayega, screen fullscreen ho jaayegi (${t.duration} minutes), aur camera pura exam on rahega. Camera deny/off, tab switch ya minimize par test terminate ho jaayega.</p>
+    <p class="muted">Camera permission allow karna zaroori hai. Ye feature HTTPS ya localhost par best kaam karta hai.</p>
+    ${cameraError ? `<div class="error">${esc(cameraError)}</div>` : ''}
     <div class="btnbar" style="justify-content:center;">
       <button class="gold" onclick="beginExam('${testId}')">Haan, Start Karein</button>
       <button class="secondary" onclick="render()">Cancel</button>
@@ -590,8 +609,53 @@ function confirmStartTest(testId){
   </div></div>`;
 }
 
-function beginExam(testId){
+async function requestFrontCamera(){
+  cameraError = '';
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    cameraError = 'Is browser me camera access supported nahi hai. Kripya latest Chrome/Edge use karein.';
+    return null;
+  }
+  stopCameraStream();
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    cameraStream = stream;
+    armCameraGuards(stream);
+    return stream;
+  }catch(err){
+    cameraError = 'Camera permission required hai. Permission allow karke dobara Start karein.';
+    return null;
+  }
+}
+function armCameraGuards(stream){
+  stream.getVideoTracks().forEach(track=>{
+    track.onended = () => {
+      if(examState && examState.active){ terminateExam('Camera band/disconnect detect hua'); }
+    };
+    track.onmute = () => {
+      if(examState && examState.active){ terminateExam('Camera feed unavailable detect hui'); }
+    };
+  });
+}
+function attachCameraPreview(){
+  const video = document.getElementById('proctorCamera');
+  if(!video || !cameraStream) return;
+  if(video.srcObject !== cameraStream){ video.srcObject = cameraStream; }
+  video.play().catch(()=>{});
+}
+function stopCameraStream(){
+  if(cameraStream){
+    cameraStream.getTracks().forEach(track=>track.stop());
+    cameraStream = null;
+  }
+}
+
+async function beginExam(testId){
   const t = DB.tests.find(x=>x.id===testId);
+  const stream = await requestFrontCamera();
+  if(!stream){ confirmStartTest(testId, true); return; }
   examState = {
     test: t,
     answers: {},
@@ -662,6 +726,10 @@ views.studentTest = () => {
     <div class="timer" id="examTimer">--:--</div>
     <div class="seal">Live Proctoring</div>
   </div>
+  <div class="camera-tile no-select" aria-label="Front camera preview">
+    <video id="proctorCamera" autoplay muted playsinline></video>
+    <div class="camera-label"><span>FRONT CAMERA</span><span class="camera-dot"></span></div>
+  </div>
   <div class="no-select">
   ${t.questions.map((q,i)=>{
     if(q.type==='mcq'){
@@ -694,6 +762,7 @@ async function submitExam(normal, reason){
   examState.submitting = true;
   examState.active = false;
   detachExamListeners();
+  stopCameraStream();
   if(document.fullscreenElement){
     (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document).catch(()=>{});
   }
@@ -738,7 +807,7 @@ function topBar(title, name){
   </div>`;
 }
 function afterRender(){
-  if(view==='studentTest'){ tickTimer(); }
+  if(view==='studentTest'){ attachCameraPreview(); tickTimer(); }
 }
 
 /* ---------------- boot ---------------- */
