@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ExamDesk — Online Test Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A4A;
+    --ink-soft:#33455F;
+    --paper:#FAF6EC;
+    --paper-line:#E4DCC8;
+    --gold:#B8862B;
+    --gold-soft:#DDBB78;
+    --alert:#A63D2F;
+    --green:#3C6E47;
+    --slate:#5C6B7A;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  #app{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  h1,h2,h3{font-family:'Source Serif 4', serif; margin:0 0 6px;}
+  .brand{
+    display:flex;align-items:baseline;gap:10px;justify-content:space-between;
+    border-bottom:3px double var(--ink);
+    padding-bottom:14px;margin-bottom:28px;
+  }
+  .brand .logo{font-family:'Source Serif 4',serif;font-weight:700;font-size:28px;letter-spacing:0.5px;}
+  .brand .logo span{color:var(--gold);}
+  .brand .tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--slate);}
+  .card{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    padding:24px;
+    margin-bottom:20px;
+    box-shadow:0 1px 0 rgba(27,42,74,0.04);
+  }
+  .card.center{text-align:center;}
+  .muted{color:var(--slate);font-size:14px;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;}
+  .col{flex:1;min-width:200px;}
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
+  input[type=text],input[type=password],input[type=number],input[type=datetime-local],textarea,select{
+    width:100%;padding:10px 12px;border:1.5px solid var(--paper-line);border-radius:3px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:14px;background:#fffdf9;color:var(--ink);
+  }
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--gold-soft);border-color:var(--gold);}
+  textarea{resize:vertical;min-height:70px;}
+  button{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;
+    padding:11px 20px;border-radius:3px;border:1.5px solid var(--ink);
+    background:var(--ink);color:var(--paper);cursor:pointer;letter-spacing:0.2px;
+  }
+  button:hover{background:var(--ink-soft);}
+  button.secondary{background:transparent;color:var(--ink);border-color:var(--ink);}
+  button.secondary:hover{background:var(--paper-line);}
+  button.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+  button.gold:hover{background:#9c7024;}
+  button.danger{background:var(--alert);border-color:var(--alert);color:#fff;}
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .tabs{display:flex;gap:0;margin-bottom:22px;border-bottom:2px solid var(--ink);}
+  .tabs button{border:none;background:none;color:var(--slate);padding:10px 18px;font-weight:600;border-radius:0;}
+  .tabs button.active{color:var(--ink);border-bottom:3px solid var(--gold);margin-bottom:-2px;}
+  .ledger-row{
+    display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--paper-line);
+  }
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-idx{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-weight:600;width:28px;flex-shrink:0;}
+  .ledger-main{flex:1;}
+  .ledger-main .title{font-weight:600;}
+  .pill{
+    display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+    letter-spacing:0.4px;text-transform:uppercase;
+  }
+  .pill.live{background:#E4F0E6;color:var(--green);}
+  .pill.upcoming{background:#FFF3DC;color:var(--gold);}
+  .pill.expired{background:#F0E9E0;color:var(--slate);}
+  .pill.done{background:#DCE6F0;color:var(--ink-soft);}
+  .pill.terminated{background:#F5DEDA;color:var(--alert);}
+  .error{color:var(--alert);font-size:13px;margin-top:8px;}
+  .info-banner{
+    background:#FFF9EC;border:1px solid var(--gold-soft);border-left:4px solid var(--gold);
+    padding:12px 14px;font-size:13px;color:var(--ink-soft);border-radius:3px;margin-bottom:18px;
+  }
+  a.linklike{color:var(--gold);cursor:pointer;font-weight:600;text-decoration:underline;}
+
+  /* OMR bubble option */
+  .omr-option{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--paper-line);
+    border-radius:4px;margin-bottom:8px;cursor:pointer;background:#fffdf9;
+  }
+  .omr-option:hover{border-color:var(--gold-soft);}
+  .omr-option.selected{border-color:var(--gold);background:#FFF9EC;}
+  .omr-bubble{
+    width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex-shrink:0;position:relative;
+  }
+  .omr-option.selected .omr-bubble{border-color:var(--gold);}
+  .omr-option.selected .omr-bubble::after{
+    content:'';position:absolute;inset:3px;border-radius:50%;background:var(--gold);
+  }
+  .qcard{border:1px solid var(--paper-line);border-radius:4px;padding:18px;margin-bottom:16px;background:#fffefb;}
+  .qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .qnum{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-weight:600;}
+  .marks-tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--slate);}
+
+  /* exam mode top bar */
+  .exam-bar{
+    position:sticky;top:0;z-index:50;background:var(--ink);color:var(--paper);
+    display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin:-28px -20px 24px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .exam-bar .timer{font-size:20px;font-weight:600;}
+  .exam-bar .timer.critical{color:#FF8A73;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+  .no-select{user-select:none;-webkit-user-select:none;}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(27,42,74,0.92);display:flex;align-items:center;justify-content:center;
+    z-index:999;padding:20px;
+  }
+  .overlay .box{background:#fff;border-radius:6px;padding:34px;max-width:440px;text-align:center;}
+  .overlay .box h2{color:var(--alert);}
+  .seal{
+    display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--alert);border:1.5px solid var(--alert);padding:3px 10px;border-radius:20px;
+  }
+  footer.note{margin-top:30px;font-size:12px;color:var(--slate);border-top:1px solid var(--paper-line);padding-top:14px;}
+</style>
+</head>
+<body>
+<div id="app"><div class="card center"><p class="muted">Loading ExamDesk…</p></div></div>
+
+<script>
+/* ---------------- storage helpers ---------------- */
+async function sGet(key, shared){
+  try{ const r = await window.storage.get(key, shared); return r ? r.value : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, value, shared){
+  try{ return await window.storage.set(key, value, shared); }catch(e){ console.error(e); return null; }
+}
+
+const DB = { users: [], tests: [], submissions: [] };
+let currentUser = null; // {username, name, role}
+
+async function loadAll(){
+  const u = await sGet('users', true);
+  const t = await sGet('tests', true);
+  const s = await sGet('submissions', true);
+  DB.users = u ? JSON.parse(u) : [];
+  DB.tests = t ? JSON.parse(t) : [];
+  DB.submissions = s ? JSON.parse(s) : [];
+}
+async function saveUsers(){ await sSet('users', JSON.stringify(DB.users), true); }
+async function saveTests(){ await sSet('tests', JSON.stringify(DB.tests), true); }
+async function saveSubmissions(){ await sSet('submissions', JSON.stringify(DB.submissions), true); }
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDT(iso){ if(!iso) return '-'; const d = new Date(iso); return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+
+/* ---------------- view state ---------------- */
+let view = 'landing';
+let authRole = null;
+let authMode = 'login';
+let authError = '';
+let teacherTab = 'mytests';
+let teacherDraft = null;
+let openTestId = null;
+let examState = null; // active exam runtime state
+
+const app = document.getElementById('app');
+function render(){ app.innerHTML = views[view](); afterRender(); }
+const views = {};
+
+/* ================= LANDING ================= */
+views.landing = () => `
+  <div class="brand">
+    <div class="logo">Exam<span>Desk</span></div>
+    <div class="tag">ONLINE TEST PORTAL</div>
+  </div>
+  <div class="row">
+    <div class="col card center">
+      <h2>Teacher</h2>
+      <p class="muted">Test schedule karein, MCQ &amp; short-answer questions banayein, submissions grade karein.</p>
+      <button class="gold" onclick="goAuth('teacher')">Teacher Login</button>
+    </div>
+    <div class="col card center">
+      <h2>Student</h2>
+      <p class="muted">Scheduled test attempt karein aur apna score turant dekhein.</p>
+      <button onclick="goAuth('student')">Student Login</button>
+    </div>
+  </div>
+  <footer class="note">Prototype notice: data is stored in shared app storage (sabhi users ko visible), koi alag backend server nahi hai. Screenshot blocking sirf best-effort deterrent hai — browser OS-level screenshot ko 100% rok nahi sakta.</footer>
+`;
+
+function goAuth(role){ authRole = role; authMode='login'; authError=''; view='auth'; render(); }
+function goLanding(){ view='landing'; render(); }
+
+/* ================= AUTH ================= */
+views.auth = () => {
+  if(authRole==='student'){
+    return `
+    <div class="brand">
+      <div class="logo">Exam<span>Desk</span></div>
+      <div class="tag">STUDENT LOGIN</div>
+    </div>
+    <div class="card" style="max-width:420px;margin:0 auto;">
+      <h2>Student Login</h2>
+      <p class="muted">Apna Student ID aur naam dalein — bas itna kaafi hai, password ki zaroorat nahi.</p>
+      <label>Student ID</label>
+      <input id="a_id" type="text" placeholder="e.g. 21BCS045">
+      <label>Full Name</label>
+      <input id="a_name" type="text" placeholder="Aapka naam">
+      ${authError ? `<div class="error">${esc(authError)}</div>` : ''}
+      <div class="btnbar">
+        <button class="gold" onclick="doStudentAuth()">Continue to Tests →</button>
+        <button class="secondary" onclick="goLanding()">← Back</button>
+      </div>
+    </div>
+    `;
+  }
+  return `
+  <div class="brand">
+    <div class="logo">Exam<span>Desk</span></div>
+    <div class="tag">${authRole.toUpperCase()} ${authMode.toUpperCase()}</div>
+  </div>
+  <div class="card" style="max-width:420px;margin:0 auto;">
+    <h2>Teacher ${authMode==='login'?'Login':'Register'}</h2>
+    ${authMode==='register' ? `<label>Full Name</label><input id="a_name" type="text" placeholder="Aapka naam">` : ''}
+    <label>Username</label>
+    <input id="a_user" type="text" placeholder="username">
+    <label>Password</label>
+    <input id="a_pass" type="password" placeholder="password">
+    ${authError ? `<div class="error">${esc(authError)}</div>` : ''}
+    <div class="btnbar">
+      <button class="gold" onclick="doAuth()">${authMode==='login'?'Login':'Register'}</button>
+      <button class="secondary" onclick="goLanding()">← Back</button>
+    </div>
+    <p class="muted" style="margin-top:14px;">
+      ${authMode==='login' ? `Naya account? <a class="linklike" onclick="switchAuthMode('register')">Register karein</a>`
+      : `Pehle se account hai? <a class="linklike" onclick="switchAuthMode('login')">Login karein</a>`}
+    </p>
+  </div>
+`;
+};
+function switchAuthMode(m){ authMode=m; authError=''; render(); }
+
+async function doStudentAuth(){
+  const id = document.getElementById('a_id').value.trim();
+  const name = document.getElementById('a_name').value.trim();
+  if(!id || !name){ authError='Student ID aur Naam dono bharein.'; render(); return; }
+  let u = DB.users.find(x=>x.username===id && x.role==='student');
+  if(!u){
+    u = { username:id, name, role:'student' };
+    DB.users.push(u); await saveUsers();
+  } else if(u.name !== name){
+    u.name = name; await saveUsers();
+  }
+  currentUser = u;
+  view = 'studentHome';
+  render();
+}
+
+async function doAuth(){
+  const user = document.getElementById('a_user').value.trim();
+  const pass = document.getElementById('a_pass').value;
+  if(!user || !pass){ authError='Username aur password dono bharein.'; render(); return; }
+  if(authMode==='register'){
+    const name = document.getElementById('a_name').value.trim() || user;
+    if(DB.users.find(u=>u.username===user)){ authError='Ye username pehle se liya gaya hai.'; render(); return; }
+    const u = { username:user, password:pass, role:'teacher', name };
+    DB.users.push(u); await saveUsers();
+    currentUser = u;
+  } else {
+    const u = DB.users.find(x=>x.username===user && x.password===pass && x.role==='teacher');
+    if(!u){ authError='Galat username/password, ya account nahi mila.'; render(); return; }
+    currentUser = u;
+  }
+  view = 'teacherHome';
+  render();
+}
+function logout(){ currentUser=null; view='landing'; render(); }
+
+/* ================= TEACHER HOME ================= */
+views.teacherHome = () => {
+  const myTests = DB.tests.filter(t=>t.teacher===currentUser.username).sort((a,b)=> new Date(b.availableFrom)-new Date(a.availableFrom));
+  return `
+  ${topBar('Teacher Panel', currentUser.name)}
+  <div class="tabs">
+    <button class="${teacherTab==='mytests'?'active':''}" onclick="setTeacherTab('mytests')">My Tests</button>
+    <button class="${teacherTab==='create'?'active':''}" onclick="startCreateTest()">+ New Test</button>
+  </div>
+  ${teacherTab==='mytests' ? renderTeacherTestList(myTests) : renderCreateTest()}
+  <footer class="note">Note: screenshot poori tarah block nahi ho sakti (browser limitation); ye system sirf tab-switch, window-minimize aur fullscreen-exit par test turant terminate karta hai, aur copy-paste/right-click disable karta hai.</footer>
+  `;
+};
+function setTeacherTab(t){ teacherTab=t; render(); }
+
+function renderTeacherTestList(myTests){
+  if(myTests.length===0) return `<div class="card center"><p class="muted">Abhi koi test nahi banaya. "+ New Test" par click karke shuru karein.</p></div>`;
+  return `<div class="card">` + myTests.map((t,i)=>{
+    const subs = DB.submissions.filter(s=>s.testId===t.id);
+    const pending = subs.filter(s=>s.needsReview).length;
+    return `
+    <div class="ledger-row">
+      <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
+      <div class="ledger-main">
+        <div class="title">${esc(t.title)}</div>
+        <div class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · ${t.duration} min · ${t.questions.length} questions · ${subs.length} submissions${pending?` · <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
+      </div>
+      <button class="secondary" onclick="openTest('${t.id}')">Open</button>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+/* ---------- create test ---------- */
+function startCreateTest(){
+  teacherDraft = { title:'', availableFrom:'', availableTo:'', duration:30, questions:[] };
+  teacherTab='create'; render();
+}
+function renderCreateTest(){
+  const d = teacherDraft;
+  return `
+  <div class="card">
+    <h3>Test Details</h3>
+    <label>Test Title</label>
+    <input id="d_title" type="text" value="${esc(d.title)}" placeholder="e.g. Unit Test 1 — Chapter 3">
+    <div class="row">
+      <div class="col"><label>Available From</label><input id="d_from" type="datetime-local" value="${d.availableFrom}"></div>
+      <div class="col"><label>Available Until</label><input id="d_to" type="datetime-local" value="${d.availableTo}"></div>
+      <div class="col"><label>Duration (minutes)</label><input id="d_dur" type="number" min="1" value="${d.duration}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Add Question (${d.questions.length} added)</h3>
+    <label>Question Type</label>
+    <select id="q_type" onchange="renderCreateTest_refreshType()">
+      <option value="mcq">MCQ (auto-graded)</option>
+      <option value="short">Short Answer (manually graded)</option>
+    </select>
+    <label>Question Text</label>
+    <textarea id="q_text" placeholder="Question likhein..."></textarea>
+    <div id="q_extra">${questionExtraFields('mcq')}</div>
+    <label>Marks</label>
+    <input id="q_marks" type="number" min="1" value="1" style="max-width:120px;">
+    <div class="btnbar"><button class="secondary" onclick="addQuestionToDraft()">+ Add Question to Paper</button></div>
+  </div>
+
+  ${d.questions.length ? `<div class="card"><h3>Question Paper Preview</h3>${d.questions.map((q,i)=>`
+    <div class="qcard">
+      <div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks · ${q.type==='mcq'?'MCQ':'Short Answer'}</span></div>
+      <div>${esc(q.text)}</div>
+      ${q.type==='mcq' ? `<ul>${q.options.map((o,oi)=>`<li>${esc(o)} ${oi===q.correct?'<b style="color:var(--green)">(correct)</b>':''}</li>`).join('')}</ul>` : ''}
+      <button class="secondary" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="removeDraftQuestion(${i})">Remove</button>
+    </div>`).join('')}</div>` : ''}
+
+  <div class="btnbar">
+    <button class="gold" onclick="publishTest()" ${d.questions.length===0?'disabled':''}>Publish &amp; Schedule Test</button>
+    <button class="secondary" onclick="setTeacherTab('mytests')">Cancel</button>
+  </div>
+  `;
+}
+function questionExtraFields(type, opts){
+  opts = opts || ['','','',''];
+  if(type==='short') return '';
+  return `
+  <label>Options (select the correct one)</label>
+  ${[0,1,2,3].map(i=>`
+    <div class="row" style="align-items:center;margin-bottom:6px;">
+      <input type="radio" name="q_correct" value="${i}" ${i===0?'checked':''} style="width:auto;">
+      <input type="text" class="q_opt" data-idx="${i}" placeholder="Option ${i+1}" value="${esc(opts[i]||'')}" style="flex:1;">
+    </div>`).join('')}
+  `;
+}
+function renderCreateTest_refreshType(){
+  const type = document.getElementById('q_type').value;
+  document.getElementById('q_extra').innerHTML = questionExtraFields(type);
+}
+function addQuestionToDraft(){
+  const type = document.getElementById('q_type').value;
+  const text = document.getElementById('q_text').value.trim();
+  const marks = parseInt(document.getElementById('q_marks').value) || 1;
+  if(!text){ alert('Question text likhein.'); return; }
+  let q = { id: uid(), type, text, marks };
+  if(type==='mcq'){
+    const opts = Array.from(document.querySelectorAll('.q_opt')).map(i=>i.value.trim());
+    if(opts.some(o=>!o)){ alert('Sabhi 4 options bharein.'); return; }
+    const correct = parseInt(document.querySelector('input[name=q_correct]:checked').value);
+    q.options = opts; q.correct = correct;
+  }
+  // capture test-level fields before re-render wipes them
+  captureDraftHeader();
+  teacherDraft.questions.push(q);
+  render();
+}
+function removeDraftQuestion(i){ captureDraftHeader(); teacherDraft.questions.splice(i,1); render(); }
+function captureDraftHeader(){
+  const t=document.getElementById('d_title'), f=document.getElementById('d_from'), to=document.getElementById('d_to'), du=document.getElementById('d_dur');
+  if(t) teacherDraft.title = t.value;
+  if(f) teacherDraft.availableFrom = f.value;
+  if(to) teacherDraft.availableTo = to.value;
+  if(du) teacherDraft.duration = parseInt(du.value)||30;
+}
+async function publishTest(){
+  captureDraftHeader();
+  const d = teacherDraft;
+  if(!d.title || !d.availableFrom || !d.availableTo){ alert('Title aur schedule (from/until) bharein.'); return; }
+  if(new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" "Available From" ke baad ka time hona chahiye.'); return; }
+  const test = { id: uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
+  DB.tests.push(test); await saveTests();
+  teacherTab='mytests'; render();
+}
+
+/* ---------- teacher: open test / grading ---------- */
+function openTest(id){ openTestId=id; view='teacherTestDetail'; render(); }
+views.teacherTestDetail = () => {
+  const t = DB.tests.find(x=>x.id===openTestId);
+  const subs = DB.submissions.filter(s=>s.testId===t.id);
+  const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
+  return `
+  ${topBar(t.title, currentUser.name)}
+  <p class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · Duration ${t.duration} min · Total marks ${totalMarks}</p>
+  <button class="secondary" onclick="view='teacherHome';render()">← Back to My Tests</button>
+  <div class="card">
+    <h3>Submissions (${subs.length})</h3>
+    ${subs.length===0 ? `<p class="muted">Abhi tak koi submission nahi aayi.</p>` :
+    subs.map(s=>{
+      const student = DB.users.find(u=>u.username===s.student);
+      return `
+      <div class="ledger-row">
+        <div class="ledger-main">
+          <div class="title">${esc(student?student.name:s.student)}</div>
+          <div class="muted">
+            ${s.status==='terminated' ? `<span class="pill terminated">Terminated</span> ${esc(s.terminateReason||'')}` : `<span class="pill done">Submitted</span>`}
+            · MCQ auto score: ${s.autoScore}/${s.autoMax}
+            ${s.needsReview ? ' · <span style="color:var(--alert);font-weight:600;">Short answers pending review</span>' : (s.hasShort ? ` · Final: ${s.finalScore}/${totalMarks}` : '')}
+          </div>
+        </div>
+        <button class="secondary" onclick="gradeSubmission('${s.id}')">${s.needsReview ? 'Grade' : 'View'}</button>
+      </div>`;
+    }).join('')}
+  </div>
+  `;
+};
+
+let gradingSubId = null;
+function gradeSubmission(subId){ gradingSubId = subId; view='grading'; render(); }
+views.grading = () => {
+  const s = DB.submissions.find(x=>x.id===gradingSubId);
+  const t = DB.tests.find(x=>x.id===s.testId);
+  const student = DB.users.find(u=>u.username===s.student);
+  return `
+  ${topBar('Grade Submission', currentUser.name)}
+  <p class="muted">${esc(student?student.name:s.student)} · ${esc(t.title)}</p>
+  <button class="secondary" onclick="view='teacherTestDetail';render()">← Back</button>
+  <div class="card">
+    ${t.questions.map((q,i)=>{
+      const ans = s.answers[q.id];
+      if(q.type==='mcq'){
+        const correct = q.correct===ans;
+        return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
+        <div>${esc(q.text)}</div>
+        <p class="muted">Student answer: ${ans!==undefined ? esc(q.options[ans]) : '(no answer)'} — ${correct?'<b style="color:var(--green)">Correct</b>':'<b style="color:var(--alert)">Incorrect</b>'} (correct: ${esc(q.options[q.correct])})</p>
+        </div>`;
+      } else {
+        const marks = (s.shortMarks && s.shortMarks[q.id]!==undefined) ? s.shortMarks[q.id] : '';
+        return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">max ${q.marks} marks</span></div>
+        <div>${esc(q.text)}</div>
+        <p class="muted">Student answer:</p>
+        <div style="background:#FFF9EC;padding:10px;border-radius:3px;margin-bottom:8px;">${esc(ans||'(no answer)')}</div>
+        <label>Marks Awarded (0–${q.marks})</label>
+        <input type="number" class="grade_marks" data-qid="${q.id}" data-max="${q.marks}" min="0" max="${q.marks}" value="${marks}" style="max-width:120px;">
+        </div>`;
+      }
+    }).join('')}
+    <div class="btnbar"><button class="gold" onclick="saveGrading()">Save Grades</button></div>
+  </div>
+  `;
+};
+async function saveGrading(){
+  const s = DB.submissions.find(x=>x.id===gradingSubId);
+  const t = DB.tests.find(x=>x.id===s.testId);
+  const inputs = document.querySelectorAll('.grade_marks');
+  s.shortMarks = s.shortMarks || {};
+  let ok = true;
+  inputs.forEach(inp=>{
+    const max = parseInt(inp.dataset.max);
+    let v = parseFloat(inp.value);
+    if(isNaN(v) || v<0) v=0;
+    if(v>max) v=max;
+    s.shortMarks[inp.dataset.qid] = v;
+  });
+  const hasAllShortGraded = t.questions.filter(q=>q.type==='short').every(q=> s.shortMarks[q.id]!==undefined);
+  s.needsReview = !hasAllShortGraded;
+  const shortTotal = Object.values(s.shortMarks).reduce((a,b)=>a+b,0);
+  s.finalScore = s.autoScore + shortTotal;
+  await saveSubmissions();
+  view='teacherTestDetail'; render();
+}
+
+/* ================= STUDENT HOME ================= */
+views.studentHome = () => {
+  const now = new Date();
+  const tests = DB.tests.slice().sort((a,b)=> new Date(a.availableFrom)-new Date(b.availableFrom));
+  return `
+  ${topBar('Student Panel', currentUser.name)}
+  <div class="card">
+    <h3>Available Tests</h3>
+    ${tests.length===0 ? `<p class="muted">Abhi koi test schedule nahi hua hai.</p>` : tests.map((t,i)=>{
+      const from = new Date(t.availableFrom), to = new Date(t.availableTo);
+      const mySub = DB.submissions.find(s=>s.testId===t.id && s.student===currentUser.username);
+      let statusHtml, actionHtml;
+      if(mySub){
+        const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
+        if(mySub.status==='terminated'){
+          statusHtml = `<span class="pill terminated">Terminated</span>`;
+        } else if(mySub.needsReview){
+          statusHtml = `<span class="pill done">Submitted</span> <span class="muted">score pending review</span>`;
+        } else {
+          statusHtml = `<span class="pill done">Score: ${mySub.finalScore ?? mySub.autoScore}/${totalMarks}</span>`;
+        }
+        actionHtml = `<button class="secondary" onclick="viewResult('${mySub.id}')">View Result</button>`;
+      } else if(now < from){
+        statusHtml = `<span class="pill upcoming">Upcoming</span>`;
+        actionHtml = `<button disabled>Not started yet</button>`;
+      } else if(now > to){
+        statusHtml = `<span class="pill expired">Expired</span>`;
+        actionHtml = `<button disabled>Window closed</button>`;
+      } else {
+        statusHtml = `<span class="pill live">Live now</span>`;
+        actionHtml = `<button class="gold" onclick="confirmStartTest('${t.id}')">Start Test</button>`;
+      }
+      return `<div class="ledger-row">
+        <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
+        <div class="ledger-main">
+          <div class="title">${esc(t.title)}</div>
+          <div class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · ${t.duration} min · ${t.questions.length} questions ${statusHtml}</div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('')}
+  </div>
+  <footer class="note">Test shuru karte hi screen fullscreen me lock ho jaayegi. Tab switch, window minimize ya fullscreen se bahar aane par test turant terminate ho jaayega. Copy/paste aur right-click bhi disabled rahega.</footer>
+  `;
+};
+function viewResult(subId){ gradingSubId = subId; view='studentResult'; render(); }
+views.studentResult = () => {
+  const s = DB.submissions.find(x=>x.id===gradingSubId);
+  const t = DB.tests.find(x=>x.id===s.testId);
+  const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
+  return `
+  ${topBar('Result', currentUser.name)}
+  <div class="card center">
+    <h2>${esc(t.title)}</h2>
+    ${s.status==='terminated' ? `<p class="pill terminated" style="font-size:14px;padding:6px 16px;">Test Terminated</p><p class="muted">Reason: ${esc(s.terminateReason||'')}</p>` : ''}
+    <p class="muted">MCQ auto-graded score: <b>${s.autoScore} / ${s.autoMax}</b></p>
+    ${s.hasShort ? (s.needsReview ? `<p class="muted">Short answer questions abhi review ke liye pending hain. Final score baad me update hoga.</p>` : `<p><b style="font-size:22px;">Final Score: ${s.finalScore} / ${totalMarks}</b></p>`) : `<p><b style="font-size:22px;">Final Score: ${s.autoScore} / ${totalMarks}</b></p>`}
+  </div>
+  <button class="secondary" onclick="view='studentHome';render()">← Back to Tests</button>
+  `;
+};
+
+/* ---------- confirm & start exam ---------- */
+function confirmStartTest(testId){
+  const t = DB.tests.find(x=>x.id===testId);
+  app.innerHTML = `
+  <div class="overlay"><div class="box">
+    <h2 style="color:var(--ink);">Start Test?</h2>
+    <p class="muted">"${esc(t.title)}" shuru hote hi screen fullscreen ho jaayegi (${t.duration} minutes). Tab switch ya minimize karne par test turant terminate ho jaayega aur dobara attempt possible nahi hoga.</p>
+    <div class="btnbar" style="justify-content:center;">
+      <button class="gold" onclick="beginExam('${testId}')">Haan, Start Karein</button>
+      <button class="secondary" onclick="render()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function beginExam(testId){
+  const t = DB.tests.find(x=>x.id===testId);
+  examState = {
+    test: t,
+    answers: {},
+    endAt: Date.now() + t.duration*60000,
+    active: false,
+    warnCount: 0,
+    submitting: false,
+  };
+  view='studentTest';
+  render();
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  if(req) req.call(el).catch(()=>{});
+  setTimeout(()=>{
+    examState.active = true;
+    document.addEventListener('visibilitychange', onVisChange);
+    window.addEventListener('blur', onWinBlur);
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('contextmenu', blockEvt, true);
+    document.addEventListener('copy', blockEvt, true);
+    document.addEventListener('cut', blockEvt, true);
+    document.addEventListener('paste', blockEvt, true);
+    document.addEventListener('keydown', examKeyBlock, true);
+  }, 900);
+  tickTimer();
+}
+function blockEvt(e){ if(examState && examState.active){ e.preventDefault(); } }
+function examKeyBlock(e){
+  if(!examState || !examState.active) return;
+  const k = e.key.toLowerCase();
+  const combo = (e.ctrlKey||e.metaKey) && ['c','v','x','u','p','s','a'].includes(k);
+  if(combo || e.key==='F12'){ e.preventDefault(); }
+  if(e.key==='PrintScreen'){ examState.warnCount++; }
+}
+function onVisChange(){ if(examState && examState.active && document.hidden){ terminateExam('Tab switch / minimize detected'); } }
+function onWinBlur(){ if(examState && examState.active){ terminateExam('Window switch detected'); } }
+function onFsChange(){
+  if(!document.fullscreenElement && examState && examState.active){ terminateExam('Fullscreen se bahar nikalne ki koshish detect hui'); }
+}
+function detachExamListeners(){
+  document.removeEventListener('visibilitychange', onVisChange);
+  window.removeEventListener('blur', onWinBlur);
+  document.removeEventListener('fullscreenchange', onFsChange);
+  document.removeEventListener('contextmenu', blockEvt, true);
+  document.removeEventListener('copy', blockEvt, true);
+  document.removeEventListener('cut', blockEvt, true);
+  document.removeEventListener('paste', blockEvt, true);
+  document.removeEventListener('keydown', examKeyBlock, true);
+}
+
+function tickTimer(){
+  if(!examState || view!=='studentTest') return;
+  const bar = document.getElementById('examTimer');
+  if(!bar){ return; }
+  const remain = Math.max(0, examState.endAt - Date.now());
+  const mm = Math.floor(remain/60000), ss = Math.floor((remain%60000)/1000);
+  bar.textContent = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  bar.className = 'timer' + (remain < 60000 ? ' critical' : '');
+  if(remain<=0){ submitExam(false, 'Time up'); return; }
+  requestAnimationFrame(()=>setTimeout(tickTimer,250));
+}
+
+views.studentTest = () => {
+  const t = examState.test;
+  return `
+  <div class="exam-bar no-select">
+    <div>${esc(t.title)}</div>
+    <div class="timer" id="examTimer">--:--</div>
+    <div class="seal">Live Proctoring</div>
+  </div>
+  <div class="no-select">
+  ${t.questions.map((q,i)=>{
+    if(q.type==='mcq'){
+      return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
+      <div style="margin-bottom:10px;">${esc(q.text)}</div>
+      ${q.options.map((o,oi)=>`
+        <div class="omr-option ${examState.answers[q.id]===oi?'selected':''}" onclick="selectMcq('${q.id}',${oi})">
+          <div class="omr-bubble"></div><div>${esc(o)}</div>
+        </div>`).join('')}
+      </div>`;
+    } else {
+      return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
+      <div style="margin-bottom:10px;">${esc(q.text)}</div>
+      <textarea onpaste="return false" oncopy="return false" oncut="return false" oninput="examState.answers['${q.id}']=this.value" placeholder="Apna jawab yahan likhein...">${esc(examState.answers[q.id]||'')}</textarea>
+      </div>`;
+    }
+  }).join('')}
+  <div class="btnbar"><button class="gold" onclick="confirmSubmit()">Submit Test</button></div>
+  </div>
+  `;
+};
+function selectMcq(qid, idx){ examState.answers[qid]=idx; render(); }
+function confirmSubmit(){
+  if(!confirm('Test submit karna confirm karein? Submit karne ke baad dobara jawab badal nahi sakte.')) return;
+  submitExam(true, null);
+}
+
+async function submitExam(normal, reason){
+  if(!examState || examState.submitting) return;
+  examState.submitting = true;
+  examState.active = false;
+  detachExamListeners();
+  if(document.fullscreenElement){
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document).catch(()=>{});
+  }
+  const t = examState.test;
+  let autoScore=0, autoMax=0, hasShort=false;
+  t.questions.forEach(q=>{
+    if(q.type==='mcq'){ autoMax += q.marks; if(examState.answers[q.id]===q.correct) autoScore += q.marks; }
+    else { hasShort = true; }
+  });
+  const sub = {
+    id: uid(), testId: t.id, student: currentUser.username,
+    answers: examState.answers,
+    autoScore, autoMax, hasShort,
+    needsReview: hasShort,
+    status: normal ? 'submitted' : 'terminated',
+    terminateReason: reason,
+    submittedAt: new Date().toISOString(),
+  };
+  DB.submissions.push(sub);
+  await saveSubmissions();
+  examState = null;
+  if(!normal){
+    gradingSubId = sub.id;
+    view = 'studentResult';
+    render();
+  } else {
+    gradingSubId = sub.id;
+    view = 'studentResult';
+    render();
+  }
+}
+function terminateExam(reason){
+  if(!examState || !examState.active) return;
+  submitExam(false, reason);
+}
+
+/* ================= shared bits ================= */
+function topBar(title, name){
+  return `<div class="brand">
+    <div><div class="logo">Exam<span>Desk</span></div><div class="muted">${esc(title)}</div></div>
+    <div style="text-align:right;"><div>${esc(name)}</div><a class="linklike" onclick="logout()">Logout</a></div>
+  </div>`;
+}
+function afterRender(){
+  if(view==='studentTest'){ tickTimer(); }
+}
+
+/* ---------------- boot ---------------- */
+async function ensureDefaultTeacher(){
+  const email = 'gauravprabhakar33@gmail.com';
+  if(!DB.users.find(u=>u.username===email && u.role==='teacher')){
+    DB.users.push({ username: email, password: 'Gaurav@1999', role: 'teacher', name: 'Gaurav Prabhakar' });
+    await saveUsers();
+  }
+}
+(async function boot(){
+  await loadAll();
+  await ensureDefaultTeacher();
+  render();
+})();
+</script>
+</body>
+</html>
