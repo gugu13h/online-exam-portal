@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ExamDesk — Online Test Portal</title>
+<title>ExamDesk - Online Test Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -170,7 +170,7 @@
 <script>
 /* ---------------- storage helpers ---------------- */
 const FIREBASE_CONFIG = {
-  // Firebase Console > Project settings > Your apps > Web app config se values yahan paste karein.
+  // Paste values here from Firebase Console > Project settings > Your apps > Web app config.
   apiKey: "AIzaSyD6YnLWI7nGoLTgF69_rPg08GrKfJZiemM",
   authDomain: "exam-portal-4d1d3.firebaseapp.com",
   databaseURL: "https://exam-portal-4d1d3-default-rtdb.firebaseio.com",
@@ -202,7 +202,7 @@ function hasFirebaseConfig(){
 function initFirebase(){
   if(!hasFirebaseConfig()) return false;
   if(!window.firebase || !firebase.initializeApp || !firebase.database){
-    console.warn('Firebase SDK load nahi hua. localStorage fallback use hoga.');
+    console.warn('Firebase SDK did not load. Using localStorage fallback.');
     return false;
   }
   if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -283,16 +283,16 @@ views.landing = () => `
   <div class="row">
     <div class="col card center">
       <h2>Teacher</h2>
-      <p class="muted">Test schedule karein, MCQ &amp; short-answer questions banayein, submissions grade karein.</p>
+      <p class="muted">Schedule tests, create MCQ and short-answer questions, and grade submissions.</p>
       <button class="gold" onclick="goAuth('teacher')">Teacher Login</button>
     </div>
     <div class="col card center">
       <h2>Student</h2>
-      <p class="muted">Scheduled test attempt karein aur apna score turant dekhein.</p>
+      <p class="muted">Attempt scheduled tests and view your score instantly.</p>
       <button onclick="goAuth('student')">Student Login</button>
     </div>
   </div>
-  <footer class="note">Storage: ${storageStatus()}. Screenshot/recording blocking browser me best-effort hoti hai, lekin exam mode PrintScreen, print shortcuts, tab-switch, minimize aur fullscreen-exit par attempt terminate karta hai.</footer>
+  <footer class="note">Storage: ${storageStatus()}. Screenshot/recording blocking is best-effort in the browser, but exam mode terminates attempts on PrintScreen, print shortcuts, tab switch, minimize, and fullscreen exit.</footer>
 `;
 
 function goAuth(role){ authRole = role; authMode='login'; authError=''; view='auth'; render(); }
@@ -308,15 +308,15 @@ views.auth = () => {
     </div>
     <div class="card" style="max-width:420px;margin:0 auto;">
       <h2>Student Login</h2>
-      <p class="muted">Apna Student ID aur naam dalein — bas itna kaafi hai, password ki zaroorat nahi.</p>
+      <p class="muted">Enter your Student ID and name. No password is required.</p>
       <label>Student ID</label>
       <input id="a_id" type="text" placeholder="e.g. 21BCS045">
       <label>Full Name</label>
-      <input id="a_name" type="text" placeholder="Aapka naam">
+      <input id="a_name" type="text" placeholder="Your name">
       ${authError ? `<div class="error">${esc(authError)}</div>` : ''}
       <div class="btnbar">
-        <button class="gold" onclick="doStudentAuth()">Continue to Tests →</button>
-        <button class="secondary" onclick="goLanding()">← Back</button>
+        <button class="gold" onclick="doStudentAuth()">Continue to Tests -></button>
+        <button class="secondary" onclick="goLanding()"><- Back</button>
       </div>
     </div>
     `;
@@ -328,7 +328,7 @@ views.auth = () => {
   </div>
   <div class="card" style="max-width:420px;margin:0 auto;">
     <h2>Teacher ${authMode==='login'?'Login':'Register'}</h2>
-    ${authMode==='register' ? `<label>Full Name</label><input id="a_name" type="text" placeholder="Aapka naam">` : ''}
+    ${authMode==='register' ? `<label>Full Name</label><input id="a_name" type="text" placeholder="Your name">` : ''}
     <label>Username</label>
     <input id="a_user" type="text" placeholder="username">
     <label>Password</label>
@@ -336,11 +336,11 @@ views.auth = () => {
     ${authError ? `<div class="error">${esc(authError)}</div>` : ''}
     <div class="btnbar">
       <button class="gold" onclick="doAuth()">${authMode==='login'?'Login':'Register'}</button>
-      <button class="secondary" onclick="goLanding()">← Back</button>
+      <button class="secondary" onclick="goLanding()"><- Back</button>
     </div>
     <p class="muted" style="margin-top:14px;">
-      ${authMode==='login' ? `Naya account? <a class="linklike" onclick="switchAuthMode('register')">Register karein</a>`
-      : `Pehle se account hai? <a class="linklike" onclick="switchAuthMode('login')">Login karein</a>`}
+      ${authMode==='login' ? `New account? <a class="linklike" onclick="switchAuthMode('register')">Register</a>`
+      : `Already have an account? <a class="linklike" onclick="switchAuthMode('login')">Login</a>`}
     </p>
   </div>
 `;
@@ -350,7 +350,7 @@ function switchAuthMode(m){ authMode=m; authError=''; render(); }
 async function doStudentAuth(){
   const id = document.getElementById('a_id').value.trim();
   const name = document.getElementById('a_name').value.trim();
-  if(!id || !name){ authError='Student ID aur Naam dono bharein.'; render(); return; }
+  if(!id || !name){ authError='Please enter both Student ID and Name.'; render(); return; }
   let u = DB.users.find(x=>x.username===id && x.role==='student');
   if(!u){
     u = { username:id, name, role:'student' };
@@ -366,16 +366,16 @@ async function doStudentAuth(){
 async function doAuth(){
   const user = document.getElementById('a_user').value.trim();
   const pass = document.getElementById('a_pass').value;
-  if(!user || !pass){ authError='Username aur password dono bharein.'; render(); return; }
+  if(!user || !pass){ authError='Please enter both username and password.'; render(); return; }
   if(authMode==='register'){
     const name = document.getElementById('a_name').value.trim() || user;
-    if(DB.users.find(u=>u.username===user)){ authError='Ye username pehle se liya gaya hai.'; render(); return; }
+    if(DB.users.find(u=>u.username===user)){ authError='This username is already taken.'; render(); return; }
     const u = { username:user, password:pass, role:'teacher', name };
     DB.users.push(u); await saveUsers();
     currentUser = u;
   } else {
     const u = DB.users.find(x=>x.username===user && x.password===pass && x.role==='teacher');
-    if(!u){ authError='Galat username/password, ya account nahi mila.'; render(); return; }
+    if(!u){ authError='Incorrect username/password, or account not found.'; render(); return; }
     currentUser = u;
   }
   view = 'teacherHome';
@@ -393,13 +393,13 @@ views.teacherHome = () => {
     <button class="${teacherTab==='create'?'active':''}" onclick="startCreateTest()">+ New Test</button>
   </div>
   ${teacherTab==='mytests' ? renderTeacherTestList(myTests) : renderCreateTest()}
-  <footer class="note">Note: browser OS-level screenshot ko 100% block nahi kar sakta, lekin ye system PrintScreen/print shortcuts, tab-switch, window-minimize aur fullscreen-exit par test turant terminate karta hai, aur copy-paste/right-click disable karta hai.</footer>
+  <footer class="note">Note: the browser cannot block OS-level screenshots 100%, but this system terminates the test immediately on PrintScreen/print shortcuts, tab switch, window minimize, or fullscreen exit, and disables copy-paste/right-click.</footer>
   `;
 };
 function setTeacherTab(t){ teacherTab=t; render(); }
 
 function renderTeacherTestList(myTests){
-  if(myTests.length===0) return `<div class="card center"><p class="muted">Abhi koi test nahi banaya. "+ New Test" par click karke shuru karein.</p></div>`;
+  if(myTests.length===0) return `<div class="card center"><p class="muted">No tests created yet. Click "+ New Test" to get started.</p></div>`;
   return `<div class="card">` + myTests.map((t,i)=>{
     const subs = DB.submissions.filter(s=>s.testId===t.id);
     const pending = subs.filter(s=>s.needsReview).length;
@@ -408,7 +408,7 @@ function renderTeacherTestList(myTests){
       <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
       <div class="ledger-main">
         <div class="title">${esc(t.title)}</div>
-        <div class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · ${t.duration} min · ${t.questions.length} questions · ${subs.length} submissions${pending?` · <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
+        <div class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | ${t.duration} min | ${t.questions.length} questions | ${subs.length} submissions${pending?` | <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
       </div>
       <button class="secondary" onclick="openTest('${t.id}')">Open</button>
     </div>`;
@@ -426,7 +426,7 @@ function renderCreateTest(){
   <div class="card">
     <h3>Test Details</h3>
     <label>Test Title</label>
-    <input id="d_title" type="text" value="${esc(d.title)}" placeholder="e.g. Unit Test 1 — Chapter 3">
+    <input id="d_title" type="text" value="${esc(d.title)}" placeholder="e.g. Unit Test 1 - Chapter 3">
     <div class="row">
       <div class="col"><label>Available From</label><input id="d_from" type="datetime-local" value="${d.availableFrom}"></div>
       <div class="col"><label>Available Until</label><input id="d_to" type="datetime-local" value="${d.availableTo}"></div>
@@ -442,7 +442,7 @@ function renderCreateTest(){
       <option value="short">Short Answer (manually graded)</option>
     </select>
     <label>Question Text</label>
-    <textarea id="q_text" placeholder="Question likhein..."></textarea>
+    <textarea id="q_text" placeholder="Write the question..."></textarea>
     <div id="q_extra">${questionExtraFields('mcq')}</div>
     <label>Marks</label>
     <input id="q_marks" type="number" min="1" value="1" style="max-width:120px;">
@@ -483,11 +483,11 @@ function addQuestionToDraft(){
   const type = document.getElementById('q_type').value;
   const text = document.getElementById('q_text').value.trim();
   const marks = parseInt(document.getElementById('q_marks').value) || 1;
-  if(!text){ alert('Question text likhein.'); return; }
+  if(!text){ alert('Please enter the question text.'); return; }
   let q = { id: uid(), type, text, marks };
   if(type==='mcq'){
     const opts = Array.from(document.querySelectorAll('.q_opt')).map(i=>i.value.trim());
-    if(opts.some(o=>!o)){ alert('Sabhi 4 options bharein.'); return; }
+    if(opts.some(o=>!o)){ alert('Please fill all 4 options.'); return; }
     const correct = parseInt(document.querySelector('input[name=q_correct]:checked').value);
     q.options = opts; q.correct = correct;
   }
@@ -507,8 +507,8 @@ function captureDraftHeader(){
 async function publishTest(){
   captureDraftHeader();
   const d = teacherDraft;
-  if(!d.title || !d.availableFrom || !d.availableTo){ alert('Title aur schedule (from/until) bharein.'); return; }
-  if(new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" "Available From" ke baad ka time hona chahiye.'); return; }
+  if(!d.title || !d.availableFrom || !d.availableTo){ alert('Please enter the title and schedule (from/until).'); return; }
+  if(new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" must be after "Available From".'); return; }
   const test = { id: uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
   DB.tests.push(test); await saveTests();
   teacherTab='mytests'; render();
@@ -522,11 +522,11 @@ views.teacherTestDetail = () => {
   const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
   return `
   ${topBar(t.title, currentUser.name)}
-  <p class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · Duration ${t.duration} min · Total marks ${totalMarks}</p>
-  <button class="secondary" onclick="view='teacherHome';render()">← Back to My Tests</button>
+  <p class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | Duration ${t.duration} min | Total marks ${totalMarks}</p>
+  <button class="secondary" onclick="view='teacherHome';render()"><- Back to My Tests</button>
   <div class="card">
     <h3>Submissions (${subs.length})</h3>
-    ${subs.length===0 ? `<p class="muted">Abhi tak koi submission nahi aayi.</p>` :
+    ${subs.length===0 ? `<p class="muted">No submissions yet.</p>` :
     subs.map(s=>{
       const student = DB.users.find(u=>u.username===s.student);
       return `
@@ -556,7 +556,7 @@ views.grading = () => {
   return `
   ${topBar('Grade Submission', currentUser.name)}
   <p class="muted">${esc(student?student.name:s.student)} · ${esc(t.title)}</p>
-  <button class="secondary" onclick="view='teacherTestDetail';render()">← Back</button>
+  <button class="secondary" onclick="view='teacherTestDetail';render()"><- Back</button>
   <div class="card">
     ${t.questions.map((q,i)=>{
       const ans = s.answers[q.id];
@@ -564,7 +564,7 @@ views.grading = () => {
         const correct = q.correct===ans;
         return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
         <div>${esc(q.text)}</div>
-        <p class="muted">Student answer: ${ans!==undefined ? esc(q.options[ans]) : '(no answer)'} — ${correct?'<b style="color:var(--green)">Correct</b>':'<b style="color:var(--alert)">Incorrect</b>'} (correct: ${esc(q.options[q.correct])})</p>
+        <p class="muted">Student answer: ${ans!==undefined ? esc(q.options[ans]) : '(no answer)'} - ${correct?'<b style="color:var(--green)">Correct</b>':'<b style="color:var(--alert)">Incorrect</b>'} (correct: ${esc(q.options[q.correct])})</p>
         </div>`;
       } else {
         const marks = (s.shortMarks && s.shortMarks[q.id]!==undefined) ? s.shortMarks[q.id] : '';
@@ -572,7 +572,7 @@ views.grading = () => {
         <div>${esc(q.text)}</div>
         <p class="muted">Student answer:</p>
         <div style="background:#FFF9EC;padding:10px;border-radius:3px;margin-bottom:8px;">${esc(ans||'(no answer)')}</div>
-        <label>Marks Awarded (0–${q.marks})</label>
+        <label>Marks Awarded (0-${q.marks})</label>
         <input type="number" class="grade_marks" data-qid="${q.id}" data-max="${q.marks}" min="0" max="${q.marks}" value="${marks}" style="max-width:120px;">
         </div>`;
       }
@@ -610,7 +610,7 @@ views.studentHome = () => {
   ${topBar('Student Panel', currentUser.name)}
   <div class="card">
     <h3>Available Tests</h3>
-    ${tests.length===0 ? `<p class="muted">Abhi koi test schedule nahi hua hai.</p>` : tests.map((t,i)=>{
+    ${tests.length===0 ? `<p class="muted">No tests are scheduled yet.</p>` : tests.map((t,i)=>{
       const from = new Date(t.availableFrom), to = new Date(t.availableTo);
       const mySub = DB.submissions.find(s=>s.testId===t.id && s.student===currentUser.username);
       let statusHtml, actionHtml;
@@ -638,13 +638,13 @@ views.studentHome = () => {
         <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
         <div class="ledger-main">
           <div class="title">${esc(t.title)}</div>
-          <div class="muted">${fmtDT(t.availableFrom)} → ${fmtDT(t.availableTo)} · ${t.duration} min · ${t.questions.length} questions ${statusHtml}</div>
+          <div class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | ${t.duration} min | ${t.questions.length} questions ${statusHtml}</div>
         </div>
         ${actionHtml}
       </div>`;
     }).join('')}
   </div>
-  <footer class="note">Test shuru karte hi screen fullscreen me lock ho jaayegi. Face clear aur dono ears visible rakhein. Neck left/right turn ya zyada motion par 3 warnings milengi; 4th motion detection par test terminate ho jaayega. Screenshot/print shortcut, tab switch, window minimize ya fullscreen se bahar aane par test turant terminate ho jaayega. Copy/paste aur right-click bhi disabled rahega.</footer>
+  <footer class="note">When the test starts, the screen will be locked in fullscreen. Keep your face clear and both ears visible. Left/right neck turns or excessive motion will trigger warnings; repeated motion after the pause will terminate the test. Screenshot/print shortcuts, tab switch, window minimize, or fullscreen exit will terminate the test immediately. Copy/paste and right-click are also disabled.</footer>
   `;
 };
 function viewResult(subId){ gradingSubId = subId; view='studentResult'; render(); }
@@ -658,9 +658,9 @@ views.studentResult = () => {
     <h2>${esc(t.title)}</h2>
     ${s.status==='terminated' ? `<p class="pill terminated" style="font-size:14px;padding:6px 16px;">Test Terminated</p><p class="muted">Reason: ${esc(s.terminateReason||'')}</p>` : ''}
     <p class="muted">MCQ auto-graded score: <b>${s.autoScore} / ${s.autoMax}</b></p>
-    ${s.hasShort ? (s.needsReview ? `<p class="muted">Short answer questions abhi review ke liye pending hain. Final score baad me update hoga.</p>` : `<p><b style="font-size:22px;">Final Score: ${s.finalScore} / ${totalMarks}</b></p>`) : `<p><b style="font-size:22px;">Final Score: ${s.autoScore} / ${totalMarks}</b></p>`}
+    ${s.hasShort ? (s.needsReview ? `<p class="muted">Short answer questions are pending review. The final score will be updated later.</p>` : `<p><b style="font-size:22px;">Final Score: ${s.finalScore} / ${totalMarks}</b></p>`) : `<p><b style="font-size:22px;">Final Score: ${s.autoScore} / ${totalMarks}</b></p>`}
   </div>
-  <button class="secondary" onclick="view='studentHome';render()">← Back to Tests</button>
+  <button class="secondary" onclick="view='studentHome';render()"><- Back to Tests</button>
   `;
 };
 
@@ -671,18 +671,18 @@ function confirmStartTest(testId, keepError){
   appRoot.innerHTML = `
   <div class="overlay"><div class="box">
     <h2 style="color:var(--ink);">Start Test?</h2>
-    <p class="muted">"${esc(t.title)}" shuru hote hi front camera aur microphone access maanga jaayega, screen fullscreen ho jaayegi (${t.duration} minutes), aur camera/mic pura exam on rahega. Camera/mic deny/off, tab switch ya minimize par test terminate ho jaayega.</p>
+    <p class="muted">When "${esc(t.title)}" starts, front camera and microphone access will be requested, the screen will enter fullscreen (${t.duration} minutes), and the camera/mic must remain on for the entire exam. Denying or turning off the camera/mic, switching tabs, or minimizing the window will terminate the test.</p>
     <ul class="exam-rules">
-      <li>Seedhe baithkar exam dein, face camera ke center me rakhein.</li>
-      <li>Face clearly visible hona chahiye, light front se honi chahiye.</li>
-      <li>Dono ears camera me visible rahne chahiye.</li>
-      <li>Neck left/right turn ya zyada movement detect hone par warning milegi.</li>
-      <li>3 warnings ke baad exam pause hoga; resume ke baad 2 extra chances milenge, uske baad motion detect hone par exam terminate ho jaayega.</li>
+      <li>Sit upright and keep your face centered in the camera.</li>
+      <li>Your face must be clearly visible with light coming from the front.</li>
+      <li>Both ears should remain visible in the camera.</li>
+      <li>A warning will appear if left/right neck turns or excessive movement are detected.</li>
+      <li>After 3 warnings the exam will pause; after resuming, you will get 2 extra chances, then further motion detection will terminate the exam.</li>
     </ul>
-    <p class="muted">Camera aur microphone permission allow karna zaroori hai. Ye feature HTTPS ya localhost par best kaam karta hai.</p>
+    <p class="muted">Camera and microphone permission is required. This feature works best on HTTPS or localhost.</p>
     ${cameraError ? `<div class="error">${esc(cameraError)}</div>` : ''}
     <div class="btnbar" style="justify-content:center;">
-      <button class="gold" onclick="beginExam('${testId}')">Haan, Start Karein</button>
+      <button class="gold" onclick="beginExam('${testId}')">Yes, Start Test</button>
       <button class="secondary" onclick="render()">Cancel</button>
     </div>
   </div></div>`;
@@ -691,7 +691,7 @@ function confirmStartTest(testId, keepError){
 async function requestFrontCamera(){
   cameraError = '';
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    cameraError = 'Is browser me camera access supported nahi hai. Kripya latest Chrome/Edge use karein.';
+    cameraError = 'Camera access is not supported in this browser. Please use the latest Chrome or Edge.';
     return null;
   }
   stopCameraStream();
@@ -704,25 +704,25 @@ async function requestFrontCamera(){
     armCameraGuards(stream);
     return stream;
   }catch(err){
-    cameraError = 'Camera aur microphone permission required hai. Permission allow karke dobara Start karein.';
+    cameraError = 'Camera and microphone permission is required. Allow permission and start again.';
     return null;
   }
 }
 function armCameraGuards(stream){
   stream.getVideoTracks().forEach(track=>{
     track.onended = () => {
-      if(examState && examState.active){ terminateExam('Camera band/disconnect detect hua'); }
+      if(examState && examState.active){ terminateExam('Camera turned off or disconnected'); }
     };
     track.onmute = () => {
-      if(examState && examState.active){ terminateExam('Camera feed unavailable detect hui'); }
+      if(examState && examState.active){ terminateExam('Camera feed unavailable'); }
     };
   });
   stream.getAudioTracks().forEach(track=>{
     track.onended = () => {
-      if(examState && examState.active){ terminateExam('Microphone band/disconnect detect hua'); }
+      if(examState && examState.active){ terminateExam('Microphone turned off or disconnected'); }
     };
     track.onmute = () => {
-      if(examState && examState.active){ terminateExam('Microphone feed unavailable detect hui'); }
+      if(examState && examState.active){ terminateExam('Microphone feed unavailable'); }
     };
   });
 }
@@ -825,7 +825,7 @@ function registerMotionWarning(){
     return;
   }
   if(examState.motionWarnings >= 6){
-    terminateExam('Resume ke baad extra 2 chances ke baad motion detect hua');
+    terminateExam('Motion detected after the 2 extra chances following resume');
     return;
   }
   showMotionToast(examState.motionWarnings);
@@ -839,11 +839,11 @@ function showMotionToast(count){
     document.body.appendChild(toast);
   }
   if(count <= 3){
-    toast.innerHTML = `Motion detect ho raha hai - Warning ${count}/3<span class="muted">Seedhe baithiye, face center me rakhiye aur dono ears visible rakhiye. 3 warnings ke baad exam pause hoga.</span>`;
+    toast.innerHTML = `Motion detected - Warning ${count}/3<span class="muted">Sit upright, keep your face centered, and keep both ears visible. After 3 warnings, the exam will pause.</span>`;
   } else {
     const extra = count - 3;
-    const note = extra < 2 ? 'Ab 1 extra chance bacha hai.' : 'Ab agli motion detection par exam terminate hoga.';
-    toast.innerHTML = `Motion detect ho raha hai - Extra chance ${extra}/2<span class="muted">Resume ke baad sirf 2 extra chances milte hain. ${note}</span>`;
+    const note = extra < 2 ? 'You have 1 extra chance left.' : 'The next motion detection will terminate the exam.';
+    toast.innerHTML = `Motion detected - Extra chance ${extra}/2<span class="muted">Only 2 extra chances are allowed after resume. ${note}</span>`;
   }
   if(motionToastTimer){ clearTimeout(motionToastTimer); }
   motionToastTimer = setTimeout(()=>{ const el=document.getElementById('motionToast'); if(el){ el.remove(); } }, 3800);
@@ -936,7 +936,7 @@ function onBeforePrint(e){
 function onVisChange(){ if(examState && examState.active && document.hidden){ terminateExam('Tab switch / minimize detected'); } }
 function onWinBlur(){ if(examState && examState.active){ terminateExam('Window switch detected'); } }
 function onFsChange(){
-  if(!document.fullscreenElement && examState && examState.active){ terminateExam('Fullscreen se bahar nikalne ki koshish detect hui'); }
+  if(!document.fullscreenElement && examState && examState.active){ terminateExam('Attempt to exit fullscreen detected'); }
 }
 function detachExamListeners(){
   document.removeEventListener('visibilitychange', onVisChange);
@@ -977,7 +977,7 @@ views.studentTest = () => {
   ${examState.paused ? `
   <div class="overlay no-select"><div class="box">
     <h2 style="color:var(--alert);">Exam Paused</h2>
-    <p class="muted">Motion warning 3/3 complete ho gayi hai. Aap exam resume kar sakte hain, lekin resume ke baad sirf 2 extra chances milenge. Uske baad motion detect hone par exam terminate ho jayega.</p>
+    <p class="muted">Motion warning 3/3 is complete. You can resume the exam, but after resuming you will get only 2 extra chances. After that, motion detection will terminate the exam.</p>
     <div class="btnbar" style="justify-content:center;">
       <button class="gold" onclick="resumeMotionPausedExam()">Resume Test</button>
     </div>
@@ -995,7 +995,7 @@ views.studentTest = () => {
     } else {
       return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
       <div style="margin-bottom:10px;">${esc(q.text)}</div>
-      <textarea onpaste="return false" oncopy="return false" oncut="return false" oninput="examState.answers['${q.id}']=this.value" placeholder="Apna jawab yahan likhein...">${esc(examState.answers[q.id]||'')}</textarea>
+      <textarea onpaste="return false" oncopy="return false" oncut="return false" oninput="examState.answers['${q.id}']=this.value" placeholder="Write your answer here...">${esc(examState.answers[q.id]||'')}</textarea>
       </div>`;
     }
   }).join('')}
@@ -1005,7 +1005,7 @@ views.studentTest = () => {
 };
 function selectMcq(qid, idx){ examState.answers[qid]=idx; render(); }
 function confirmSubmit(){
-  if(!confirm('Test submit karna confirm karein? Submit karne ke baad dobara jawab badal nahi sakte.')) return;
+  if(!confirm('Confirm test submission? After submitting, you cannot change your answers.')) return;
   submitExam(true, null);
 }
 
