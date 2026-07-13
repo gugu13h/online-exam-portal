@@ -252,6 +252,7 @@ async function sSet(key, value, shared){
 
 const DB = { users: [], tests: [], submissions: [] };
 let currentUser = null; // {username, name, role}
+const VALID_STUDENT_IDS = ['101', '102', '7', '81', '5', '75', '76', '11'];
 
 async function loadAll(){
   const u = await sGet('users', true);
@@ -268,6 +269,20 @@ async function saveSubmissions(){ await sSet('submissions', JSON.stringify(DB.su
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDT(iso){ if(!iso) return '-'; const d = new Date(iso); return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function testSortTime(t){ return t.availableFrom ? new Date(t.availableFrom).getTime() : 0; }
+function testScheduleText(t){
+  if(t.availableFrom && t.availableTo) return `${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)}`;
+  if(t.availableFrom) return `From ${fmtDT(t.availableFrom)}`;
+  if(t.availableTo) return `Until ${fmtDT(t.availableTo)}`;
+  return 'Always available';
+}
+function testWindowStatus(t, now){
+  const from = t.availableFrom ? new Date(t.availableFrom) : null;
+  const to = t.availableTo ? new Date(t.availableTo) : null;
+  if(from && now < from) return 'upcoming';
+  if(to && now > to) return 'expired';
+  return 'live';
+}
 function storageStatus(){ return firestoreDb ? 'Firebase Firestore' : 'local browser storage'; }
 function firebaseSetupNotice(){
   if(firestoreStatus === 'connected') return '';
@@ -294,6 +309,8 @@ let motionToastTimer = null;
 let motionCanvas = null;
 let motionVideo = null;
 let motionStartToken = 0;
+let lastStudentKeyboardAt = 0;
+let lastVoiceTypingNoticeAt = 0;
 
 const appRoot = document.getElementById('app');
 function render(){ appRoot.innerHTML = views[view](); afterRender(); }
@@ -377,6 +394,12 @@ async function doStudentAuth(){
   const id = document.getElementById('a_id').value.trim();
   const name = document.getElementById('a_name').value.trim();
   if(!id || !name){ authError='Please enter both Student ID and Name.'; render(); return; }
+  if(!VALID_STUDENT_IDS.includes(id)){
+    authError = 'Student not found. Contact your teacher.';
+    alert(authError);
+    render();
+    return;
+  }
   let u = DB.users.find(x=>x.username===id && x.role==='student');
   if(!u){
     u = { username:id, name, role:'student' };
@@ -411,7 +434,7 @@ function logout(){ stopCameraStream(); currentUser=null; view='landing'; render(
 
 /* ================= TEACHER HOME ================= */
 views.teacherHome = () => {
-  const myTests = DB.tests.filter(t=>t.teacher===currentUser.username).sort((a,b)=> new Date(b.availableFrom)-new Date(a.availableFrom));
+  const myTests = DB.tests.filter(t=>t.teacher===currentUser.username).sort((a,b)=> testSortTime(b)-testSortTime(a));
   return `
   ${topBar('Teacher Panel', currentUser.name)}
   <div class="tabs">
@@ -434,7 +457,7 @@ function renderTeacherTestList(myTests){
       <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
       <div class="ledger-main">
         <div class="title">${esc(t.title)}</div>
-        <div class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | ${t.duration} min | ${t.questions.length} questions | ${subs.length} submissions${pending?` | <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
+        <div class="muted">${testScheduleText(t)} | ${t.duration} min | ${t.questions.length} questions | ${subs.length} submissions${pending?` | <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
       </div>
       <button class="secondary" onclick="openTest('${t.id}')">Open</button>
     </div>`;
@@ -454,8 +477,8 @@ function renderCreateTest(){
     <label>Test Title</label>
     <input id="d_title" type="text" value="${esc(d.title)}" placeholder="e.g. Unit Test 1 - Chapter 3">
     <div class="row">
-      <div class="col"><label>Available From</label><input id="d_from" type="datetime-local" value="${d.availableFrom}"></div>
-      <div class="col"><label>Available Until</label><input id="d_to" type="datetime-local" value="${d.availableTo}"></div>
+      <div class="col"><label>Available From <span class="muted">(optional)</span></label><input id="d_from" type="datetime-local" value="${d.availableFrom}"></div>
+      <div class="col"><label>Available Until <span class="muted">(optional)</span></label><input id="d_to" type="datetime-local" value="${d.availableTo}"></div>
       <div class="col"><label>Duration (minutes)</label><input id="d_dur" type="number" min="1" value="${d.duration}"></div>
     </div>
   </div>
@@ -484,7 +507,7 @@ function renderCreateTest(){
     </div>`).join('')}</div>` : ''}
 
   <div class="btnbar">
-    <button class="gold" onclick="publishTest()" ${d.questions.length===0?'disabled':''}>Publish &amp; Schedule Test</button>
+    <button class="gold" onclick="publishTest()" ${d.questions.length===0?'disabled':''}>Publish Test</button>
     <button class="secondary" onclick="setTeacherTab('mytests')">Cancel</button>
   </div>
   `;
@@ -533,8 +556,8 @@ function captureDraftHeader(){
 async function publishTest(){
   captureDraftHeader();
   const d = teacherDraft;
-  if(!d.title || !d.availableFrom || !d.availableTo){ alert('Please enter the title and schedule (from/until).'); return; }
-  if(new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" must be after "Available From".'); return; }
+  if(!d.title){ alert('Please enter the test title.'); return; }
+  if(d.availableFrom && d.availableTo && new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" must be after "Available From".'); return; }
   const test = { id: uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
   DB.tests.push(test); await saveTests();
   teacherTab='mytests'; render();
@@ -548,7 +571,7 @@ views.teacherTestDetail = () => {
   const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
   return `
   ${topBar(t.title, currentUser.name)}
-  <p class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | Duration ${t.duration} min | Total marks ${totalMarks}</p>
+  <p class="muted">${testScheduleText(t)} | Duration ${t.duration} min | Total marks ${totalMarks}</p>
   <button class="secondary" onclick="view='teacherHome';render()"><- Back to My Tests</button>
   <div class="card">
     <h3>Submissions (${subs.length})</h3>
@@ -583,6 +606,7 @@ views.grading = () => {
   ${topBar('Grade Submission', currentUser.name)}
   <p class="muted">${esc(student?student.name:s.student)} · ${esc(t.title)}</p>
   <button class="secondary" onclick="view='teacherTestDetail';render()"><- Back</button>
+  ${s.status==='terminated' ? `<div class="info-banner"><b>Test terminated:</b> ${esc(s.terminateReason || 'No reason recorded')}. Filled answers below were saved at termination time.</div>` : ''}
   <div class="card">
     ${t.questions.map((q,i)=>{
       const ans = s.answers[q.id];
@@ -631,14 +655,14 @@ async function saveGrading(){
 /* ================= STUDENT HOME ================= */
 views.studentHome = () => {
   const now = new Date();
-  const tests = DB.tests.slice().sort((a,b)=> new Date(a.availableFrom)-new Date(b.availableFrom));
+  const tests = DB.tests.slice().sort((a,b)=> testSortTime(a)-testSortTime(b));
   return `
   ${topBar('Student Panel', currentUser.name)}
   <div class="card">
     <h3>Available Tests</h3>
     ${tests.length===0 ? `<p class="muted">No tests are scheduled yet.</p>` : tests.map((t,i)=>{
-      const from = new Date(t.availableFrom), to = new Date(t.availableTo);
       const mySub = DB.submissions.find(s=>s.testId===t.id && s.student===currentUser.username);
+      const windowStatus = testWindowStatus(t, now);
       let statusHtml, actionHtml;
       if(mySub){
         const totalMarks = t.questions.reduce((a,q)=>a+q.marks,0);
@@ -650,10 +674,10 @@ views.studentHome = () => {
           statusHtml = `<span class="pill done">Score: ${mySub.finalScore ?? mySub.autoScore}/${totalMarks}</span>`;
         }
         actionHtml = `<button class="secondary" onclick="viewResult('${mySub.id}')">View Result</button>`;
-      } else if(now < from){
+      } else if(windowStatus === 'upcoming'){
         statusHtml = `<span class="pill upcoming">Upcoming</span>`;
         actionHtml = `<button disabled>Not started yet</button>`;
-      } else if(now > to){
+      } else if(windowStatus === 'expired'){
         statusHtml = `<span class="pill expired">Expired</span>`;
         actionHtml = `<button disabled>Window closed</button>`;
       } else {
@@ -664,7 +688,7 @@ views.studentHome = () => {
         <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
         <div class="ledger-main">
           <div class="title">${esc(t.title)}</div>
-          <div class="muted">${fmtDT(t.availableFrom)} -> ${fmtDT(t.availableTo)} | ${t.duration} min | ${t.questions.length} questions ${statusHtml}</div>
+          <div class="muted">${testScheduleText(t)} | ${t.duration} min | ${t.questions.length} questions ${statusHtml}</div>
         </div>
         ${actionHtml}
       </div>`;
@@ -1021,7 +1045,7 @@ views.studentTest = () => {
     } else {
       return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
       <div style="margin-bottom:10px;">${esc(q.text)}</div>
-      <textarea onpaste="return false" oncopy="return false" oncut="return false" oninput="examState.answers['${q.id}']=this.value" placeholder="Write your answer here...">${esc(examState.answers[q.id]||'')}</textarea>
+      <textarea class="student-answer" data-qid="${q.id}" onkeydown="studentAnswerKeydown(event)" onbeforeinput="studentAnswerBeforeInput(event)" onpaste="return false" ondrop="return false" oncopy="return false" oncut="return false" oninput="studentAnswerInput(event)" placeholder="Write your answer here...">${esc(examState.answers[q.id]||'')}</textarea>
       </div>`;
     }
   }).join('')}
@@ -1030,6 +1054,37 @@ views.studentTest = () => {
   `;
 };
 function selectMcq(qid, idx){ examState.answers[qid]=idx; render(); }
+function studentAnswerKeydown(e){
+  if(!examState || view !== 'studentTest') return;
+  lastStudentKeyboardAt = Date.now();
+}
+function studentAnswerBeforeInput(e){
+  if(!examState || view !== 'studentTest') return;
+  const inputType = e.inputType || '';
+  if(inputType.startsWith('delete') || inputType === 'historyUndo' || inputType === 'historyRedo') return;
+  if(inputType.startsWith('insert') && Date.now() - lastStudentKeyboardAt > 900){
+    e.preventDefault();
+    showVoiceTypingNotice();
+  }
+}
+function studentAnswerInput(e){
+  if(!examState || !e.target) return;
+  examState.answers[e.target.dataset.qid] = e.target.value;
+}
+function showVoiceTypingNotice(){
+  const now = Date.now();
+  if(now - lastVoiceTypingNoticeAt < 1600) return;
+  lastVoiceTypingNoticeAt = now;
+  let toast = document.getElementById('voiceTypingToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'voiceTypingToast';
+    toast.className = 'motion-toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `Voice typing is disabled<span class="muted">Please type answers using the keyboard.</span>`;
+  setTimeout(()=>{ const el=document.getElementById('voiceTypingToast'); if(el){ el.remove(); } }, 1400);
+}
 function confirmSubmit(){
   if(!confirm('Confirm test submission? After submitting, you cannot change your answers.')) return;
   submitExam(true, null);
@@ -1053,12 +1108,12 @@ async function submitExam(normal, reason){
   });
   const sub = {
     id: uid(), testId: t.id, student: currentUser.username,
-    answers: examState.answers,
+    answers: { ...examState.answers },
     autoScore, autoMax, hasShort,
     needsReview: hasShort,
     micAccess,
     status: normal ? 'submitted' : 'terminated',
-    terminateReason: reason,
+    terminateReason: normal ? '' : (reason || 'Test terminated'),
     submittedAt: new Date().toISOString(),
   };
   DB.submissions.push(sub);
