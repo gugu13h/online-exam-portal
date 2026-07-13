@@ -253,6 +253,8 @@ async function sSet(key, value, shared){
 const DB = { users: [], tests: [], submissions: [] };
 let currentUser = null; // {username, name, role}
 const VALID_STUDENT_IDS = ['101', '102', '7', '81', '5', '75', '76', '11'];
+function normalizeStudentId(id){ return String(id || '').trim(); }
+function isValidStudentId(id){ return VALID_STUDENT_IDS.includes(normalizeStudentId(id)); }
 
 async function loadAll(){
   const u = await sGet('users', true);
@@ -313,7 +315,18 @@ let lastStudentKeyboardAt = 0;
 let lastVoiceTypingNoticeAt = 0;
 
 const appRoot = document.getElementById('app');
-function render(){ appRoot.innerHTML = views[view](); afterRender(); }
+function render(){
+  if(currentUser && currentUser.role === 'student' && !isValidStudentId(currentUser.username)){
+    alert('Student not found. Contact your teacher.');
+    currentUser = null;
+    authRole = 'student';
+    authMode = 'login';
+    authError = 'Student not found. Contact your teacher.';
+    view = 'auth';
+  }
+  appRoot.innerHTML = views[view]();
+  afterRender();
+}
 const views = {};
 
 /* ================= LANDING ================= */
@@ -391,10 +404,11 @@ views.auth = () => {
 function switchAuthMode(m){ authMode=m; authError=''; render(); }
 
 async function doStudentAuth(){
-  const id = document.getElementById('a_id').value.trim();
+  currentUser = null;
+  const id = normalizeStudentId(document.getElementById('a_id').value);
   const name = document.getElementById('a_name').value.trim();
   if(!id || !name){ authError='Please enter both Student ID and Name.'; render(); return; }
-  if(!VALID_STUDENT_IDS.includes(id)){
+  if(!isValidStudentId(id)){
     authError = 'Student not found. Contact your teacher.';
     alert(authError);
     render();
@@ -1153,6 +1167,11 @@ async function ensureDefaultTeacher(){
     await saveUsers();
   }
 }
+async function removeInvalidStudentAccounts(){
+  const before = DB.users.length;
+  DB.users = DB.users.filter(u=>u.role !== 'student' || isValidStudentId(u.username));
+  if(DB.users.length !== before) await saveUsers();
+}
 async function ensureClass10DemoTest(){
   const demoId = 'class10-demo-test';
   if(DB.tests.find(t=>t.id===demoId)) return;
@@ -1223,6 +1242,7 @@ async function ensureClass10DemoTest(){
 (async function boot(){
   initFirebase();
   await loadAll();
+  await removeInvalidStudentAccounts();
   await ensureDefaultTeacher();
   await ensureClass10DemoTest();
   render();
