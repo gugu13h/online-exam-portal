@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ExamDesk - Online Test Portal</title>
+<title>Smart Tuition by Gaurav Prabhakar - Online Test Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -32,6 +32,11 @@
     color:var(--ink);
     min-height:100vh;
   }
+  body.landing-view{
+    background:
+      linear-gradient(rgba(250,246,236,0.78), rgba(250,246,236,0.88)),
+      url('assets/gaurav-prabhakar.png') center 18% / cover no-repeat fixed;
+  }
   #app{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
   h1,h2,h3{font-family:'Source Serif 4', serif; margin:0 0 6px;}
   .brand{
@@ -41,6 +46,7 @@
   }
   .brand .logo{font-family:'Source Serif 4',serif;font-weight:700;font-size:28px;letter-spacing:0.5px;}
   .brand .logo span{color:var(--gold);}
+  .brand .logo .byline{display:block;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);letter-spacing:0.2px;margin-top:-2px;}
   .brand .tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--slate);}
   .card{
     background:var(--card);
@@ -165,7 +171,7 @@
 </style>
 </head>
 <body>
-<div id="app"><div class="card center"><p class="muted">Loading ExamDesk…</p></div></div>
+<div id="app"><div class="card center"><p class="muted">Loading Smart Tuition…</p></div></div>
 
 <script>
 /* ---------------- storage helpers ---------------- */
@@ -324,15 +330,19 @@ function render(){
     authError = 'Student not found. Contact your teacher.';
     view = 'auth';
   }
+  document.body.classList.toggle('landing-view', view === 'landing');
   appRoot.innerHTML = views[view]();
   afterRender();
 }
 const views = {};
+function brandLogo(){
+  return `<div class="logo">Smart <span>Tuition</span><span class="byline">by Gaurav Prabhakar</span></div>`;
+}
 
 /* ================= LANDING ================= */
 views.landing = () => `
   <div class="brand">
-    <div class="logo">Exam<span>Desk</span></div>
+    ${brandLogo()}
     <div class="tag">ONLINE TEST PORTAL</div>
   </div>
   ${firebaseSetupNotice()}
@@ -359,7 +369,7 @@ views.auth = () => {
   if(authRole==='student'){
     return `
     <div class="brand">
-      <div class="logo">Exam<span>Desk</span></div>
+      ${brandLogo()}
       <div class="tag">STUDENT LOGIN</div>
     </div>
     <div class="card" style="max-width:420px;margin:0 auto;">
@@ -379,7 +389,7 @@ views.auth = () => {
   }
   return `
   <div class="brand">
-    <div class="logo">Exam<span>Desk</span></div>
+    ${brandLogo()}
     <div class="tag">${authRole.toUpperCase()} ${authMode.toUpperCase()}</div>
   </div>
   <div class="card" style="max-width:420px;margin:0 auto;">
@@ -1151,7 +1161,7 @@ function terminateExam(reason){
 /* ================= shared bits ================= */
 function topBar(title, name){
   return `<div class="brand">
-    <div><div class="logo">Exam<span>Desk</span></div><div class="muted">${esc(title)}</div></div>
+    <div>${brandLogo()}<div class="muted">${esc(title)}</div></div>
     <div style="text-align:right;"><div>${esc(name)}</div><a class="linklike" onclick="logout()">Logout</a></div>
   </div>`;
 }
