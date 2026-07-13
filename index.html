@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --ink:#1B2A4A;
@@ -170,17 +170,21 @@
 <script>
 /* ---------------- storage helpers ---------------- */
 const FIREBASE_CONFIG = {
-  // Paste values here from Firebase Console > Project settings > Your apps > Web app config.
+  /*
+    Paste your Firebase web app config here.
+    Firebase Console -> Project settings -> General -> Your apps -> Web app -> SDK setup and configuration -> Config
+  */
   apiKey: "AIzaSyD6YnLWI7nGoLTgF69_rPg08GrKfJZiemM",
   authDomain: "exam-portal-4d1d3.firebaseapp.com",
-  databaseURL: "https://exam-portal-4d1d3-default-rtdb.firebaseio.com",
   projectId: "exam-portal-4d1d3",
   storageBucket: "exam-portal-4d1d3.firebasestorage.app",
   messagingSenderId: "307642830509",
-  appId: "1:307642830509:web:3938f8fe2f62de084ec024"
+  appId: "1:307642830509:web:3938f8fe2f62de084ec024",
+  measurementId: "G-ZXTEC9E607"
 };
-const FIREBASE_ROOT = 'examDesk';
-let firebaseDb = null;
+const FIRESTORE_COLLECTION = 'examDesk';
+let firestoreDb = null;
+let firestoreStatus = 'missing-config';
 
 async function sGetFallback(key, shared){
   if(window.storage && typeof window.storage.get === 'function'){
@@ -197,39 +201,53 @@ async function sSetFallback(key, value, shared){
   return true;
 }
 function hasFirebaseConfig(){
-  return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.projectId);
+  return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.authDomain && FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.appId);
 }
 function initFirebase(){
-  if(!hasFirebaseConfig()) return false;
-  if(!window.firebase || !firebase.initializeApp || !firebase.database){
+  if(!hasFirebaseConfig()){
+    firestoreStatus = 'missing-config';
+    return false;
+  }
+  if(!window.firebase || !firebase.initializeApp || !firebase.firestore){
     console.warn('Firebase SDK did not load. Using localStorage fallback.');
+    firestoreStatus = 'sdk-missing';
     return false;
   }
   if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  firebaseDb = firebase.database();
+  firestoreDb = firebase.firestore();
+  firestoreStatus = 'connected';
   return true;
 }
 async function sGet(key, shared){
   try{
-    if(firebaseDb){
-      const snap = await firebaseDb.ref(`${FIREBASE_ROOT}/${key}`).get();
-      if(snap.exists()) return snap.val();
+    if(firestoreDb){
+      const snap = await firestoreDb.collection(FIRESTORE_COLLECTION).doc(key).get();
+      if(snap.exists) return snap.data().value;
       const fallbackValue = await sGetFallback(key, shared);
-      if(fallbackValue !== null) await firebaseDb.ref(`${FIREBASE_ROOT}/${key}`).set(fallbackValue);
+      if(fallbackValue !== null) await firestoreDb.collection(FIRESTORE_COLLECTION).doc(key).set({
+        value: fallbackValue,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
       return fallbackValue;
     }
     return await sGetFallback(key, shared);
   }
-  catch(e){ return null; }
+  catch(e){
+    console.error('Firestore read failed. Using empty/local data for this request.', e);
+    return null;
+  }
 }
 async function sSet(key, value, shared){
   try{
-    if(firebaseDb){
-      await firebaseDb.ref(`${FIREBASE_ROOT}/${key}`).set(value);
+    if(firestoreDb){
+      await firestoreDb.collection(FIRESTORE_COLLECTION).doc(key).set({
+        value,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
       return true;
     }
     return await sSetFallback(key, value, shared);
-  }catch(e){ console.error(e); return null; }
+  }catch(e){ console.error('Firestore/local save failed.', e); return null; }
 }
 
 const DB = { users: [], tests: [], submissions: [] };
@@ -250,7 +268,14 @@ async function saveSubmissions(){ await sSet('submissions', JSON.stringify(DB.su
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDT(iso){ if(!iso) return '-'; const d = new Date(iso); return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
-function storageStatus(){ return firebaseDb ? 'Firebase Realtime Database' : 'local browser storage'; }
+function storageStatus(){ return firestoreDb ? 'Firebase Firestore' : 'local browser storage'; }
+function firebaseSetupNotice(){
+  if(firestoreStatus === 'connected') return '';
+  const msg = firestoreStatus === 'sdk-missing'
+    ? 'Firebase SDK could not load, so this browser is using local storage.'
+    : 'Firebase keys are blank, so this browser is using local storage. Paste your config into FIREBASE_CONFIG in index.html to enable Firestore.';
+  return `<div class="info-banner"><b>Firestore not active:</b> ${msg}</div>`;
+}
 
 /* ---------------- view state ---------------- */
 let view = 'landing';
@@ -280,6 +305,7 @@ views.landing = () => `
     <div class="logo">Exam<span>Desk</span></div>
     <div class="tag">ONLINE TEST PORTAL</div>
   </div>
+  ${firebaseSetupNotice()}
   <div class="row">
     <div class="col card center">
       <h2>Teacher</h2>
