@@ -34,10 +34,11 @@
   }
   body.landing-view{
     background:
-      linear-gradient(rgba(250,246,236,0.78), rgba(250,246,236,0.88)),
-      url('assets/gaurav-prabhakar.png') center 18% / cover no-repeat fixed;
+      linear-gradient(90deg, rgba(250,246,236,0.18) 0%, rgba(250,246,236,0.28) 45%, rgba(250,246,236,0.9) 72%, rgba(250,246,236,0.96) 100%),
+      url('assets/gaurav-prabhakar.png') 24% 16% / auto 116vh no-repeat fixed;
   }
   #app{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  body.landing-view #app{max-width:1120px;min-height:100vh;}
   h1,h2,h3{font-family:'Source Serif 4', serif; margin:0 0 6px;}
   .brand{
     display:flex;align-items:baseline;gap:10px;justify-content:space-between;
@@ -59,6 +60,16 @@
   .card.center{text-align:center;}
   .muted{color:var(--slate);font-size:14px;}
   .row{display:flex;gap:14px;flex-wrap:wrap;}
+  .landing-actions{
+    min-height:calc(100vh - 210px);
+    display:grid;
+    grid-template-columns:minmax(360px,1fr) minmax(280px,380px);
+    align-items:end;
+    gap:28px;
+    padding-bottom:56px;
+  }
+  .landing-actions .row{grid-column:2;display:block;}
+  .landing-actions .card{background:rgba(255,255,255,0.92);backdrop-filter:blur(2px);}
   .col{flex:1;min-width:200px;}
   label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
   input[type=text],input[type=password],input[type=number],input[type=datetime-local],textarea,select{
@@ -151,6 +162,21 @@
   .motion-toast .muted{display:block;margin-top:3px;font-size:12px;}
   .exam-rules{text-align:left;margin:16px 0 0;padding-left:20px;color:var(--ink-soft);font-size:14px;line-height:1.55;}
   @media (max-width:640px){
+    body.landing-view{
+      background:
+        linear-gradient(rgba(250,246,236,0.16), rgba(250,246,236,0.82) 58%, rgba(250,246,236,0.98) 100%),
+        url('assets/gaurav-prabhakar.png') center top / auto 62vh no-repeat fixed;
+    }
+    body.landing-view #app{padding-top:18px;}
+    .landing-actions{
+      min-height:calc(100vh - 170px);
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      padding-top:42vh;
+      padding-bottom:24px;
+    }
+    .landing-actions .row{width:100%;}
     .camera-tile{width:128px;right:10px;bottom:10px;}
     .camera-label{font-size:9px;padding:6px 7px;}
   }
@@ -346,16 +372,18 @@ views.landing = () => `
     <div class="tag">ONLINE TEST PORTAL</div>
   </div>
   ${firebaseSetupNotice()}
-  <div class="row">
-    <div class="col card center">
-      <h2>Teacher</h2>
-      <p class="muted">Schedule tests, create MCQ and short-answer questions, and grade submissions.</p>
-      <button class="gold" onclick="goAuth('teacher')">Teacher Login</button>
-    </div>
-    <div class="col card center">
-      <h2>Student</h2>
-      <p class="muted">Attempt scheduled tests and view your score instantly.</p>
-      <button onclick="goAuth('student')">Student Login</button>
+  <div class="landing-actions">
+    <div class="row">
+      <div class="col card center">
+        <h2>Teacher</h2>
+        <p class="muted">Schedule tests, create MCQ and short-answer questions, and grade submissions.</p>
+        <button class="gold" onclick="goAuth('teacher')">Teacher Login</button>
+      </div>
+      <div class="col card center">
+        <h2>Student</h2>
+        <p class="muted">Attempt scheduled tests and view your score instantly.</p>
+        <button onclick="goAuth('student')">Student Login</button>
+      </div>
     </div>
   </div>
   <footer class="note">Storage: ${storageStatus()}. Screenshot/recording blocking is best-effort in the browser, but exam mode terminates attempts on PrintScreen, print shortcuts, tab switch, minimize, and fullscreen exit.</footer>
