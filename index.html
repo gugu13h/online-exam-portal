@@ -230,6 +230,7 @@
 </div>
 <div id="app"><div class="card center"><p class="muted">Loading Smart Tuition…</p></div></div>
 
+<script src="assets/submission-reset.js"></script>
 <script>
 /* ---------------- storage helpers ---------------- */
 const FIREBASE_CONFIG = {
@@ -692,6 +693,15 @@ async function publishTest(){
 
 /* ---------- teacher: open test / grading ---------- */
 function openTest(id){ openTestId=id; view='teacherTestDetail'; render(); }
+async function resetSubmission(subId){
+  const target = DB.submissions.find(x=>x.id===subId);
+  if(!target){ alert('This attempt was already removed.'); return; }
+  const confirmed = confirm('Delete this student attempt? The student will be able to start the test again.');
+  if(!confirmed) return;
+  DB.submissions = removeSubmissionById(DB.submissions, subId);
+  await saveSubmissions();
+  view='teacherTestDetail'; render();
+}
 views.teacherTestDetail = () => {
   const t = DB.tests.find(x=>x.id===openTestId);
   const subs = DB.submissions.filter(s=>s.testId===t.id);
@@ -716,7 +726,10 @@ views.teacherTestDetail = () => {
             ${s.needsReview ? ' · <span style="color:var(--alert);font-weight:600;">Short answers pending review</span>' : (s.hasShort ? ` · Final: ${s.finalScore}/${totalMarks}` : '')}
           </div>
         </div>
-        <button class="secondary" onclick="gradeSubmission('${s.id}')">${s.needsReview ? 'Grade' : 'View'}</button>
+        <div class="btnbar" style="margin-top:0;">
+          <button class="secondary" onclick="gradeSubmission('${s.id}')">${s.needsReview ? 'Grade' : 'View'}</button>
+          <button class="danger" onclick="resetSubmission('${s.id}')">Delete Attempt</button>
+        </div>
       </div>`;
     }).join('')}
   </div>
