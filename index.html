@@ -365,6 +365,7 @@ let authMode = 'login';
 let authError = '';
 let teacherTab = 'mytests';
 let teacherDraft = null;
+let editingTestId = null;
 let openTestId = null;
 let examState = null; // active exam runtime state
 let cameraStream = null;
@@ -587,21 +588,50 @@ function renderTeacherTestList(myTests){
         <div class="title">${esc(t.title)}</div>
         <div class="muted">${testScheduleText(t)} | ${t.duration} min | ${t.questions.length} questions | ${subs.length} submissions${pending?` | <span style="color:var(--alert);font-weight:600;">${pending} pending review</span>`:''}</div>
       </div>
-      <button class="secondary" onclick="openTest('${t.id}')">Open</button>
+      <div class="btnbar" style="margin-top:0;">
+        <button class="secondary" onclick="startEditTest('${t.id}')">Edit</button>
+        <button class="secondary" onclick="openTest('${t.id}')">Open</button>
+      </div>
     </div>`;
   }).join('') + `</div>`;
 }
 
 /* ---------- create test ---------- */
+function cloneDraftFromTest(t){
+  return {
+    id: t.id,
+    title: t.title || '',
+    availableFrom: t.availableFrom || '',
+    availableTo: t.availableTo || '',
+    duration: t.duration || 30,
+    questions: (t.questions || []).map(q => {
+      const item = { id: q.id || uid(), type: q.type, text: q.text || '', marks: q.marks || 1 };
+      if(q.type === 'mcq'){
+        item.options = q.options ? [...q.options] : ['', '', '', ''];
+        item.correct = q.correct ?? 0;
+      }
+      return item;
+    })
+  };
+}
 function startCreateTest(){
   teacherDraft = { title:'', availableFrom:'', availableTo:'', duration:30, questions:[] };
+  editingTestId = null;
+  teacherTab='create'; render();
+}
+function startEditTest(testId){
+  const t = DB.tests.find(x=>x.id===testId);
+  if(!t){ alert('This test could not be found.'); return; }
+  teacherDraft = cloneDraftFromTest(t);
+  editingTestId = testId;
   teacherTab='create'; render();
 }
 function renderCreateTest(){
   const d = teacherDraft;
+  const isEditing = !!editingTestId;
   return `
   <div class="card">
-    <h3>Test Details</h3>
+    <h3>${isEditing ? 'Edit Test' : 'Create Test'}</h3>
     <label>Test Title</label>
     <input id="d_title" type="text" value="${esc(d.title)}" placeholder="e.g. Unit Test 1 - Chapter 3">
     <div class="row">
@@ -612,7 +642,7 @@ function renderCreateTest(){
   </div>
 
   <div class="card">
-    <h3>Add Question (${d.questions.length} added)</h3>
+    <h3>${isEditing ? 'Update Questions' : 'Add Question'} (${d.questions.length} added)</h3>
     <label>Question Type</label>
     <select id="q_type" onchange="renderCreateTest_refreshType()">
       <option value="mcq">MCQ (auto-graded)</option>
@@ -635,8 +665,8 @@ function renderCreateTest(){
     </div>`).join('')}</div>` : ''}
 
   <div class="btnbar">
-    <button class="gold" onclick="publishTest()" ${d.questions.length===0?'disabled':''}>Publish Test</button>
-    <button class="secondary" onclick="setTeacherTab('mytests')">Cancel</button>
+    <button class="gold" onclick="publishTest()" ${d.questions.length===0?'disabled':''}>${isEditing ? 'Save Changes' : 'Publish Test'}</button>
+    <button class="secondary" onclick="cancelDraft()">Cancel</button>
   </div>
   `;
 }
@@ -681,14 +711,30 @@ function captureDraftHeader(){
   if(to) teacherDraft.availableTo = to.value;
   if(du) teacherDraft.duration = parseInt(du.value)||30;
 }
+function cancelDraft(){
+  editingTestId = null;
+  teacherDraft = null;
+  teacherTab='mytests';
+  render();
+}
 async function publishTest(){
   captureDraftHeader();
   const d = teacherDraft;
   if(!d.title){ alert('Please enter the test title.'); return; }
   if(d.availableFrom && d.availableTo && new Date(d.availableTo) <= new Date(d.availableFrom)){ alert('"Available Until" must be after "Available From".'); return; }
-  const test = { id: uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
-  DB.tests.push(test); await saveTests();
-  teacherTab='mytests'; render();
+  const payload = { id: editingTestId || uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
+  if(editingTestId){
+    const existing = DB.tests.find(x=>x.id===editingTestId);
+    if(existing){ Object.assign(existing, payload); }
+    else { DB.tests.push(payload); }
+  } else {
+    DB.tests.push(payload);
+  }
+  await saveTests();
+  editingTestId = null;
+  teacherDraft = null;
+  teacherTab='mytests';
+  render();
 }
 
 /* ---------- teacher: open test / grading ---------- */
