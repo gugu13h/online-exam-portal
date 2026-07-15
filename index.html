@@ -1048,7 +1048,7 @@ function detectFrameMotion(video){
     diff += Math.abs(data[i]-previous[i]) + Math.abs(data[i+1]-previous[i+1]) + Math.abs(data[i+2]-previous[i+2]);
   }
   const samples = data.length/16;
-  return diff/samples > 42;
+  return diff/samples > 70;
 }
 function registerMotionWarning(){
   if(!examState || !examState.active) return;
@@ -1074,13 +1074,7 @@ function showMotionToast(count){
     toast.className = 'motion-toast';
     document.body.appendChild(toast);
   }
-  if(count <= 3){
-    toast.innerHTML = `Motion detected - Warning ${count}/3<span class="muted">Sit upright, keep your face centered, and keep both ears visible. After 3 warnings, the exam will pause.</span>`;
-  } else {
-    const extra = count - 3;
-    const note = extra < 2 ? 'You have 1 extra chance left.' : 'The next motion detection will terminate the exam.';
-    toast.innerHTML = `Motion detected - Extra chance ${extra}/2<span class="muted">Only 2 extra chances are allowed after resume. ${note}</span>`;
-  }
+  toast.innerHTML = `<strong>MOTION DETECTED</strong><span class="muted">Don’t move. Sit straight. If you do it again, the exam will be terminated.</span>`;
   if(motionToastTimer){ clearTimeout(motionToastTimer); }
   motionToastTimer = setTimeout(()=>{ const el=document.getElementById('motionToast'); if(el){ el.remove(); } }, 3800);
 }
