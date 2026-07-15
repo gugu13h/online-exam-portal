@@ -913,7 +913,7 @@ function confirmStartTest(testId, keepError){
       <li>Your face must be clearly visible with light coming from the front.</li>
       <li>Both ears should remain visible in the camera.</li>
       <li>A warning will appear if left/right neck turns or excessive movement are detected.</li>
-      <li>After 3 warnings the exam will pause; after resuming, you will get 2 extra chances, then further motion detection will terminate the exam.</li>
+      <li>After 8 warnings, the exam will be terminated.</li>
     </ul>
     <p class="muted">Camera and microphone permission is required. This feature works best on HTTPS or localhost.</p>
     ${cameraError ? `<div class="error">${esc(cameraError)}</div>` : ''}
@@ -1056,12 +1056,8 @@ function registerMotionWarning(){
   if(examState.lastMotionAt && now - examState.lastMotionAt < 4500) return;
   examState.lastMotionAt = now;
   examState.motionWarnings = (examState.motionWarnings || 0) + 1;
-  if(examState.motionWarnings === 3 && !examState.motionPauseUsed){
-    pauseExamForMotion();
-    return;
-  }
-  if(examState.motionWarnings >= 6){
-    terminateExam('Motion detected after the 2 extra chances following resume');
+  if(examState.motionWarnings >= 8){
+    terminateExam('Motion detected repeatedly; exam terminated');
     return;
   }
   showMotionToast(examState.motionWarnings);
@@ -1077,31 +1073,6 @@ function showMotionToast(count){
   toast.innerHTML = `<strong>MOTION DETECTED</strong><span class="muted">Don’t move. Sit straight. If you do it again, the exam will be terminated.</span>`;
   if(motionToastTimer){ clearTimeout(motionToastTimer); }
   motionToastTimer = setTimeout(()=>{ const el=document.getElementById('motionToast'); if(el){ el.remove(); } }, 3800);
-}
-function pauseExamForMotion(){
-  if(!examState || !examState.active) return;
-  examState.active = false;
-  examState.paused = true;
-  examState.motionPauseUsed = true;
-  examState.pausedRemainingMs = Math.max(0, examState.endAt - Date.now());
-  detachExamListeners();
-  stopMotionMonitor();
-  render();
-}
-function resumeMotionPausedExam(){
-  if(!examState || !examState.paused) return;
-  examState.paused = false;
-  examState.active = true;
-  examState.endAt = Date.now() + Math.max(0, examState.pausedRemainingMs || 0);
-  examState.lastMotionAt = 0;
-  examState.faceBaseline = null;
-  examState.lastFrameData = null;
-  render();
-  const el = document.documentElement;
-  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
-  if(req) req.call(el).catch(()=>{});
-  attachExamListeners();
-  tickTimer();
 }
 
 async function beginExam(testId){
@@ -1204,14 +1175,6 @@ views.studentTest = () => {
     <video id="proctorCamera" autoplay muted playsinline></video>
     <div class="camera-label"><span>FRONT CAMERA + MIC</span><span class="camera-dot"></span></div>
   </div>
-  ${examState.paused ? `
-  <div class="overlay no-select"><div class="box">
-    <h2 style="color:var(--alert);">Exam Paused</h2>
-    <p class="muted">Motion warning 3/3 is complete. You can resume the exam, but after resuming you will get only 2 extra chances. After that, motion detection will terminate the exam.</p>
-    <div class="btnbar" style="justify-content:center;">
-      <button class="gold" onclick="resumeMotionPausedExam()">Resume Test</button>
-    </div>
-  </div></div>` : ''}
   <div class="no-select">
   ${t.questions.map((q,i)=>{
     if(q.type==='mcq'){
