@@ -88,6 +88,21 @@
   button.secondary:hover{background:var(--paper-line);}
   button.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
   button.gold:hover{background:#9c7024;}
+  .link-button{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:10px;
+    padding:10px 16px;
+    border-radius:4px;
+    border:1.5px solid var(--gold);
+    background:var(--gold);
+    color:#fff;
+    font-weight:700;
+    text-decoration:none;
+    transition:background .2s, transform .2s;
+  }
+  .link-button:hover{background:#9c7024;transform:translateY(-1px);}
   button.danger{background:var(--alert);border-color:var(--alert);color:#fff;}
   button:disabled{opacity:0.45;cursor:not-allowed;}
   .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
@@ -446,7 +461,10 @@ initHelpWidget();
 views.landing = () => `
   <div class="brand">
     ${brandLogo()}
-    <div class="tag">ONLINE TEST PORTAL</div>
+    <div>
+      <div class="tag">ONLINE TEST PORTAL</div>
+      <a class="link-button" href="https://gaurav-tution-portal-gp.vercel.app/" target="_blank" rel="noopener noreferrer">Tuition Update</a>
+    </div>
   </div>
   ${firebaseSetupNotice()}
   <div class="landing-actions">
@@ -1083,7 +1101,7 @@ async function beginExam(testId){
     test: t,
     answers: {},
     endAt: Date.now() + t.duration*60000,
-    active: false,
+    active: true,
     paused: false,
     pausedRemainingMs: 0,
     warnCount: 0,
@@ -1096,13 +1114,10 @@ async function beginExam(testId){
   };
   view='studentTest';
   render();
+  attachExamListeners();
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
   if(req) req.call(el).catch(()=>{});
-  setTimeout(()=>{
-    examState.active = true;
-    attachExamListeners();
-  }, 900);
   tickTimer();
 }
 function attachExamListeners(){
