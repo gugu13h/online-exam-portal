@@ -513,24 +513,19 @@ views.auth = () => {
   return `
   <div class="brand">
     ${brandLogo()}
-    <div class="tag">${authRole.toUpperCase()} ${authMode.toUpperCase()}</div>
+    <div class="tag">${authRole.toUpperCase()} LOGIN</div>
   </div>
   <div class="card" style="max-width:420px;margin:0 auto;">
-    <h2>Teacher ${authMode==='login'?'Login':'Register'}</h2>
-    ${authMode==='register' ? `<label>Full Name</label><input id="a_name" type="text" placeholder="Your name">` : ''}
+    <h2>Teacher Login</h2>
     <label>Username</label>
     <input id="a_user" type="text" placeholder="username">
     <label>Password</label>
     <input id="a_pass" type="password" placeholder="password">
     ${authError ? `<div class="error">${esc(authError)}</div>` : ''}
     <div class="btnbar">
-      <button class="gold" onclick="doAuth()">${authMode==='login'?'Login':'Register'}</button>
+      <button class="gold" onclick="doAuth()">Login</button>
       <button class="secondary" onclick="goLanding()"><- Back</button>
     </div>
-    <p class="muted" style="margin-top:14px;">
-      ${authMode==='login' ? `New account? <a class="linklike" onclick="switchAuthMode('register')">Register</a>`
-      : `Already have an account? <a class="linklike" onclick="switchAuthMode('login')">Login</a>`}
-    </p>
   </div>
 `;
 };
@@ -563,17 +558,9 @@ async function doAuth(){
   const user = document.getElementById('a_user').value.trim();
   const pass = document.getElementById('a_pass').value;
   if(!user || !pass){ authError='Please enter both username and password.'; render(); return; }
-  if(authMode==='register'){
-    const name = document.getElementById('a_name').value.trim() || user;
-    if(DB.users.find(u=>u.username===user)){ authError='This username is already taken.'; render(); return; }
-    const u = { username:user, password:pass, role:'teacher', name };
-    DB.users.push(u); await saveUsers();
-    currentUser = u;
-  } else {
-    const u = DB.users.find(x=>x.username===user && x.password===pass && x.role==='teacher');
-    if(!u){ authError='Incorrect username/password, or account not found.'; render(); return; }
-    currentUser = u;
-  }
+  const u = DB.users.find(x=>x.username===user && x.password===pass && x.role==='teacher');
+  if(!u){ authError='Incorrect username/password, or account not found.'; render(); return; }
+  currentUser = u;
   view = 'teacherHome';
   render();
 }
