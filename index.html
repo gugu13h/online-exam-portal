@@ -666,7 +666,6 @@ function renderCreateTest(){
       <div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks · ${q.type==='mcq'?'MCQ':'Short Answer'}</span></div>
       <div>${esc(q.text)}</div>
       ${q.type==='mcq' ? `<ul>${q.options.map((o,oi)=>`<li>${esc(o)} ${oi===q.correct?'<b style="color:var(--green)">(correct)</b>':''}</li>`).join('')}</ul>` : ''}
-      <button class="secondary" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="removeDraftQuestion(${i})">Remove</button>
     </div>`).join('')}</div>` : ''}
 
   <div class="btnbar">
@@ -708,7 +707,6 @@ function addQuestionToDraft(){
   teacherDraft.questions.push(q);
   render();
 }
-function removeDraftQuestion(i){ captureDraftHeader(); teacherDraft.questions.splice(i,1); render(); }
 function captureDraftHeader(){
   const t=document.getElementById('d_title'), f=document.getElementById('d_from'), to=document.getElementById('d_to'), du=document.getElementById('d_dur');
   if(t) teacherDraft.title = t.value;
@@ -730,7 +728,13 @@ async function publishTest(){
   const payload = { id: editingTestId || uid(), teacher: currentUser.username, title:d.title, availableFrom:d.availableFrom, availableTo:d.availableTo, duration:d.duration, questions:d.questions };
   if(editingTestId){
     const existing = DB.tests.find(x=>x.id===editingTestId);
-    if(existing){ Object.assign(existing, payload); }
+    if(existing){
+      const draftQuestions = new Map(d.questions.map(q=>[q.id, q]));
+      payload.questions = existing.questions.map(q=>draftQuestions.get(q.id) || q);
+      const existingQuestionIds = new Set(existing.questions.map(q=>q.id));
+      payload.questions.push(...d.questions.filter(q=>!existingQuestionIds.has(q.id)));
+      Object.assign(existing, payload);
+    }
     else { DB.tests.push(payload); }
   } else {
     DB.tests.push(payload);
