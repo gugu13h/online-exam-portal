@@ -134,19 +134,24 @@
 
   /* OMR bubble option */
   .omr-option{
-    display:flex;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--paper-line);
-    border-radius:4px;margin-bottom:8px;cursor:pointer;background:#fffdf9;
+    display:flex;align-items:flex-start;gap:12px;padding:12px;border:1.5px solid var(--paper-line);
+    border-radius:4px;margin-bottom:8px;cursor:pointer;background:#fffdf9;text-align:left;line-height:1.5;
   }
   .omr-option:hover{border-color:var(--gold-soft);}
   .omr-option.selected{border-color:var(--gold);background:#FFF9EC;}
   .omr-bubble{
-    width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex-shrink:0;position:relative;
+    width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex-shrink:0;position:relative;margin-top:1px;
   }
+  .omr-option-label{font-family:'IBM Plex Mono',monospace;font-weight:600;flex-shrink:0;}
+  .omr-option-text,.question-prompt{white-space:pre-wrap;overflow-wrap:anywhere;}
+  .question-prompt{font-size:16px;line-height:1.65;margin-bottom:14px;}
+  .student-answer{min-height:140px;line-height:1.55;}
   .omr-option.selected .omr-bubble{border-color:var(--gold);}
   .omr-option.selected .omr-bubble::after{
     content:'';position:absolute;inset:3px;border-radius:50%;background:var(--gold);
   }
   .qcard{border:1px solid var(--paper-line);border-radius:4px;padding:18px;margin-bottom:16px;background:#fffefb;}
+  .exam-question{padding:22px;border-left:4px solid var(--gold);}
   .qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
   .qnum{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-weight:600;}
   .marks-tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--slate);}
@@ -664,8 +669,8 @@ function renderCreateTest(){
   ${d.questions.length ? `<div class="card"><h3>Question Paper Preview</h3>${d.questions.map((q,i)=>`
     <div class="qcard">
       <div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks · ${q.type==='mcq'?'MCQ':'Short Answer'}</span></div>
-      <div>${esc(q.text)}</div>
-      ${q.type==='mcq' ? `<ul>${q.options.map((o,oi)=>`<li>${esc(o)} ${oi===q.correct?'<b style="color:var(--green)">(correct)</b>':''}</li>`).join('')}</ul>` : ''}
+      <div class="question-prompt">${esc(q.text)}</div>
+      ${q.type==='mcq' ? `<ul>${q.options.map((o,oi)=>`<li><b>${String.fromCharCode(65+oi)}.</b> <span class="omr-option-text">${esc(o)}</span> ${oi===q.correct?'<b style="color:var(--green)">(correct)</b>':''}</li>`).join('')}</ul>` : ''}
     </div>`).join('')}</div>` : ''}
 
   <div class="btnbar">
@@ -1184,16 +1189,16 @@ views.studentTest = () => {
   <div class="no-select">
   ${t.questions.map((q,i)=>{
     if(q.type==='mcq'){
-      return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
-      <div style="margin-bottom:10px;">${esc(q.text)}</div>
+      return `<div class="qcard exam-question"><div class="qhead"><span class="qnum">Question ${i+1}</span><span class="marks-tag">${q.marks} marks · MCQ</span></div>
+      <div class="question-prompt">${esc(q.text)}</div>
       ${q.options.map((o,oi)=>`
         <div class="omr-option ${examState.answers[q.id]===oi?'selected':''}" onclick="selectMcq('${q.id}',${oi})">
-          <div class="omr-bubble"></div><div>${esc(o)}</div>
+          <div class="omr-bubble"></div><span class="omr-option-label">${String.fromCharCode(65+oi)}.</span><span class="omr-option-text">${esc(o)}</span>
         </div>`).join('')}
       </div>`;
     } else {
-      return `<div class="qcard"><div class="qhead"><span class="qnum">Q${i+1}.</span><span class="marks-tag">${q.marks} marks</span></div>
-      <div style="margin-bottom:10px;">${esc(q.text)}</div>
+      return `<div class="qcard exam-question"><div class="qhead"><span class="qnum">Question ${i+1}</span><span class="marks-tag">${q.marks} marks · Short answer</span></div>
+      <div class="question-prompt">${esc(q.text)}</div>
       <textarea class="student-answer" data-qid="${q.id}" onkeydown="studentAnswerKeydown(event)" onbeforeinput="studentAnswerBeforeInput(event)" onpaste="return false" ondrop="return false" oncopy="return false" oncut="return false" oninput="studentAnswerInput(event)" placeholder="Write your answer here...">${esc(examState.answers[q.id]||'')}</textarea>
       </div>`;
     }
